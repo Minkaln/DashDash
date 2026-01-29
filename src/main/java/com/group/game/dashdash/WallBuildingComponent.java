@@ -9,12 +9,13 @@ import static com.almasb.fxgl.dsl.FXGL.entityBuilder;
 
 public class WallBuildingComponent extends Component {
 
-    private double lastWall = 1000;
-    private final double FLOOR_THICKNESS = 50; // Matches your Floor component
+    private double lastWallX = 1000;
+    private final double FLOOR_THICKNESS = 50; // same as floor
 
     @Override
     public void onUpdate(double tpf) {
-        if (lastWall - entity.getX() < FXGL.getAppWidth()) {
+        // Spawn walls ahead of the player
+        if (lastWallX - entity.getX() < FXGL.getAppWidth()) {
             buildWalls();
         }
     }
@@ -33,35 +34,33 @@ public class WallBuildingComponent extends Component {
         double wallWidth = 50;
 
         for (int i = 1; i <= 5; i++) {
-            double spawnX = lastWall + i * 600;
+            double spawnX = lastWallX + i * 600;
 
-            // Generate a random number between 0.0 and 1.0
             double chance = Math.random();
 
             if (chance < 0.4) {
-                // 40% chance: SPAWN ON FLOOR ONLY
+                // Floor wall
                 entityBuilder()
                         .at(spawnX, screenHeight - FLOOR_THICKNESS - wallHeight)
                         .type(EntityType.WALL)
                         .viewWithBBox(wallView(wallWidth, wallHeight))
                         .with(new CollidableComponent(true))
+                        .with(new WallComponent()) // ← moving
                         .buildAndAttach();
 
             } else if (chance < 0.8) {
-                // 40% chance: SPAWN ON CEILING ONLY
+                // Ceiling wall
                 entityBuilder()
                         .at(spawnX, FLOOR_THICKNESS)
                         .type(EntityType.WALL)
                         .viewWithBBox(wallView(wallWidth, wallHeight))
                         .with(new CollidableComponent(true))
+                        .with(new WallComponent()) // ← moving
                         .buildAndAttach();
 
-            } else {
-                // 20% chance: SPAWN NOTHING (Empty space for the player to breathe)
-                // We do nothing here, leaving a gap in the obstacles
-            }
+            } // else 20% chance: gap (do nothing)
         }
 
-        lastWall += 5 * 600;
+        lastWallX += 5 * 600;
     }
 }
