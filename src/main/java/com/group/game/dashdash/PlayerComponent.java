@@ -4,22 +4,38 @@ import com.almasb.fxgl.core.math.Vec2;
 import com.almasb.fxgl.entity.component.Component;
 
 public class PlayerComponent extends Component {
-    private Vec2 velocity = new Vec2(400, 0);
+
+    private Vec2 velocity = new Vec2(200, 0); // start slower
     private double gravityDirection = 1.0;
     private final double GRAVITY_FORCE = 4000;
     private boolean onSurface = false;
 
+    private double acceleration = 50; // how fast horizontal speed increases (pixels/sec²)
+    private double maxSpeed = 1200;   // maximum horizontal speed
+
     @Override
     public void onUpdate(double tpf) {
+
+        // --- Increase horizontal speed gradually ---
+        if (velocity.x < maxSpeed) {
+            velocity.x += acceleration * tpf;
+            if (velocity.x > maxSpeed) {
+                velocity.x = (float) maxSpeed;
+            }
+        }
+
         // Apply gravity
-        velocity.y += (float) (GRAVITY_FORCE * gravityDirection * tpf);
+        velocity.y += GRAVITY_FORCE * gravityDirection * tpf;
 
         // Cap vertical speed
         if (Math.abs(velocity.y) > 2000) {
             velocity.y = (float) (2000 * gravityDirection);
         }
 
+        // Move player
         entity.translate(velocity.x * tpf, velocity.y * tpf);
+
+        // Reset onSurface for next frame
         onSurface = false;
     }
 
@@ -28,11 +44,8 @@ public class PlayerComponent extends Component {
             gravityDirection *= -1;
             onSurface = false;
 
-            // --- THE FIX ---
-            // Instead of waiting for gravity to pull us,
-            // we immediately LAUNCH the player at high speed.
+            // Launch player instantly
             velocity.y = (float) (1200 * gravityDirection);
-
             entity.setScaleY(gravityDirection);
         }
     }
@@ -40,7 +53,6 @@ public class PlayerComponent extends Component {
     public void setOnSurface(boolean onSurface) {
         this.onSurface = onSurface;
         if (onSurface) {
-            // This stops the velocity so we don't "vibrate" against the floor
             velocity.y = 0;
         }
     }
