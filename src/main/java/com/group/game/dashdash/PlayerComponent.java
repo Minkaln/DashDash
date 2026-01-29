@@ -1,47 +1,59 @@
 package com.group.game.dashdash;
 
 import com.almasb.fxgl.core.math.Vec2;
+import com.almasb.fxgl.dsl.FXGL;
+import com.almasb.fxgl.entity.Entity;
 import com.almasb.fxgl.entity.component.Component;
+import static com.almasb.fxgl.dsl.FXGL.*;
 
 public class PlayerComponent extends Component {
-    private Vec2 velocity = new Vec2(400, 0);
-    private double gravityDirection = 1.0;
-    private final double GRAVITY_FORCE = 4000;
-    private boolean onSurface = false;
+
+    private Vec2 velocity = new Vec2(200, 0);
+    private final double GRAVITY = 600;
+    private boolean onGround = false; // NEW: Tracks if we are touching the floor
 
     @Override
     public void onUpdate(double tpf) {
-        // Apply gravity
-        velocity.y += (float) (GRAVITY_FORCE * gravityDirection * tpf);
-
-        // Cap vertical speed
-        if (Math.abs(velocity.y) > 2000) {
-            velocity.y = (float) (2000 * gravityDirection);
+        // 1. Only apply Gravity if we aren't on the ground
+        if (!onGround) {
+            velocity.y += GRAVITY * tpf;
+        } else {
+            velocity.y = 0; // Stop vertical movement when grounded
         }
+
+        if (velocity.y > 500) velocity.y = 500;
 
         entity.translate(velocity.x * tpf, velocity.y * tpf);
-        onSurface = false;
-    }
 
-    public void flipGravity() {
-        if (onSurface) {
-            gravityDirection *= -1;
-            onSurface = false;
-
-            // --- THE FIX ---
-            // Instead of waiting for gravity to pull us,
-            // we immediately LAUNCH the player at high speed.
-            velocity.y = (float) (1200 * gravityDirection);
-
-            entity.setScaleY(gravityDirection);
+        // 2. Check floor bounds (Emergency fall-back)
+        if (entity.getBottomY() > getAppHeight()) {
+            FXGL.<HelloApplication>getAppCast().requestNewGame();
         }
-    }
 
-    public void setOnSurface(boolean onSurface) {
-        this.onSurface = onSurface;
-        if (onSurface) {
-            // This stops the velocity so we don't "vibrate" against the floor
+        if (entity.getY() < 0) {
+            entity.setY(0);
             velocity.y = 0;
         }
+
+        // 3. Reset onGround every frame.
+        // If the collision handler doesn't set it to true next frame, we start falling.
+        onGround = false;
+    }
+
+    public void jump()
+    {
+        if (onGround)
+        {            // Only allow jump if touching the ground
+            velocity.y = -1000;     // Jump velocity
+            onGround = false;      // Leave the ground
+            // Play sound
+        }
+    }
+
+
+
+    // NEW: This will be called by your CollisionHandler in HelloApplication
+    public void stopFalling() {
+        onGround = true;
     }
 }
