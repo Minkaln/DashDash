@@ -28,40 +28,27 @@ public class WallBuildingComponent extends Component {
     }
 
     private void buildWalls() {
-        double screenHeight = FXGL.getAppHeight();
-        double wallHeight = 120;
-        double wallWidth = 50;
+        double height = FXGL.getAppHeight();
+        double distance = height / 2;
 
-        for (int i = 1; i <= 5; i++) {
-            double spawnX = lastWall + i * 600;
+        for (int i = 1; i <= 10; i++) {
+            double topHeight = Math.random() * (height - distance);
 
-            // Generate a random number between 0.0 and 1.0
-            double chance = Math.random();
+            entityBuilder()
+                    .at(lastWall + i * 500, 0 - 25)
+                    .type(EntityType.WALL)
+                    .viewWithBBox(wallView(50, topHeight))
+                    .with(new CollidableComponent(true))
+                    .buildAndAttach();
 
-            if (chance < 0.4) {
-                // 40% chance: SPAWN ON FLOOR ONLY
-                entityBuilder()
-                        .at(spawnX, screenHeight - FLOOR_THICKNESS - wallHeight)
-                        .type(EntityType.WALL)
-                        .viewWithBBox(wallView(wallWidth, wallHeight))
-                        .with(new CollidableComponent(true))
-                        .buildAndAttach();
-
-            } else if (chance < 0.8) {
-                // 40% chance: SPAWN ON CEILING ONLY
-                entityBuilder()
-                        .at(spawnX, FLOOR_THICKNESS)
-                        .type(EntityType.WALL)
-                        .viewWithBBox(wallView(wallWidth, wallHeight))
-                        .with(new CollidableComponent(true))
-                        .buildAndAttach();
-
-            } else {
-                // 20% chance: SPAWN NOTHING (Empty space for the player to breathe)
-                // We do nothing here, leaving a gap in the obstacles
-            }
+            entityBuilder()
+                    .at(lastWall + i * 500, 0 + topHeight + distance + 25)
+                    .type(EntityType.WALL)
+                    .viewWithBBox(wallView(50, height - distance - topHeight))
+                    .with(new CollidableComponent(true))
+                    .buildAndAttach();
         }
 
-        lastWall += 5 * 600;
+        lastWall += 10 * 500;
     }
 }
