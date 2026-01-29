@@ -6,6 +6,7 @@ import com.almasb.fxgl.entity.components.CollidableComponent;
 import javafx.scene.shape.Rectangle;
 
 import static com.almasb.fxgl.dsl.FXGL.entityBuilder;
+import static com.almasb.fxgl.dsl.FXGL.random;
 
 public class WallBuildingComponent extends Component {
 
@@ -29,7 +30,7 @@ public class WallBuildingComponent extends Component {
 
     private void buildWalls() {
         double screenHeight = FXGL.getAppHeight();
-        double wallHeight = 120;
+        double wallHeight = random(120, 550);
         double wallWidth = 50;
 
         for (int i = 1; i <= 5; i++) {
@@ -56,7 +57,21 @@ public class WallBuildingComponent extends Component {
                         .with(new CollidableComponent(true))
                         .buildAndAttach();
 
-            } else {
+            } else  if (chance < 0.2) {
+                entityBuilder()
+                        .at(spawnX, screenHeight - FLOOR_THICKNESS - wallHeight)
+                        .type(EntityType.WALL)
+                        .viewWithBBox(wallView(wallWidth, random(wallHeight, 120)))
+                        .with(new CollidableComponent(true))
+                        .buildAndAttach();
+                entityBuilder()
+                        .at(spawnX, FLOOR_THICKNESS)
+                        .type(EntityType.WALL)
+                        .viewWithBBox(wallView(wallWidth, random(wallHeight, 120)))
+                        .with(new CollidableComponent(true))
+                        .buildAndAttach();
+            }
+            else {
                 // 20% chance: SPAWN NOTHING (Empty space for the player to breathe)
                 // We do nothing here, leaving a gap in the obstacles
             }
