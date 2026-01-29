@@ -15,6 +15,7 @@ public class PlayerComponent extends Component {
         velocity.y += (float) (GRAVITY_FORCE * gravityDirection * tpf);
 
         // Cap vertical speed
+
         if (Math.abs(velocity.y) > 700) {
             velocity.y = (float) (700 * gravityDirection);
         }
