@@ -28,8 +28,8 @@ public class PlayerComponent extends Component {
         velocity.y += GRAVITY_FORCE * gravityDirection * tpf;
 
         // Cap vertical speed
-        if (Math.abs(velocity.y) > 2000) {
-            velocity.y = (float) (2000 * gravityDirection);
+        if (Math.abs(velocity.y) > 500) {
+            velocity.y = (float) (500 * gravityDirection);
         }
 
         // Move player

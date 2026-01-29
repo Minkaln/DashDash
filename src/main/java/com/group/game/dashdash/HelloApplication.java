@@ -35,8 +35,9 @@ public class HelloApplication extends GameApplication {
         settings.setWidth(1280);
         settings.setHeight(720);
         settings.setTitle("DashDash");
-        settings.setVersion("0.0.3");
-        settings.setMainMenuEnabled(false); // Optional: keeps it simple for testing
+        settings.setVersion("0.0.5");
+        settings.setMainMenuEnabled(true); // Optional: keeps it simple for testing
+        settings.setSceneFactory(new MenuFactory());
     }
     @Override
     protected void initInput() {
@@ -121,7 +122,7 @@ public class HelloApplication extends GameApplication {
         // Optional: Only increment score if player is actually moving
         inc("score", +1);
 
-        if (geti("score") == 3000) {
+        if (geti("score") == 1000) {
             showGameOver();
         }
     }
@@ -168,7 +169,7 @@ public class HelloApplication extends GameApplication {
     }
 
     private void showGameOver() {
-        showMessage("Demo Over. Thanks for playing!", () -> {
+        showMessage("GG you win.  Thanks for playing!", () -> {
             getGameController().exit();
             return null;
         });
