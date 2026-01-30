@@ -5,7 +5,7 @@ import com.almasb.fxgl.entity.component.Component;
 
 public class PlayerComponent extends Component {
 
-    private Vec2 velocity = new Vec2(200, 0); // start slower
+    private final Vec2 velocity = new Vec2(200, 0); // start slower
     private double gravityDirection = 1.0;
     private final double GRAVITY_FORCE = 4000;
     private boolean onSurface = false;
@@ -29,7 +29,7 @@ public class PlayerComponent extends Component {
 
         // Cap vertical speed
         if (Math.abs(velocity.y) > 500) {
-            velocity.y = (float) (500 * gravityDirection);
+            velocity.y = (float) (2000 * gravityDirection);
         }
 
         // Move player

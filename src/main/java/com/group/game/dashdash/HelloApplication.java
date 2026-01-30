@@ -106,9 +106,6 @@ public class HelloApplication extends GameApplication {
         uiScore.textProperty().bind(getip("score").asString());
 
         addUINode(uiScore);
-
-        Group dpadView = getInput().createVirtualDpadView();
-        addUINode(dpadView, 50, 425);
     }
 
     @Override
@@ -146,7 +143,7 @@ public class HelloApplication extends GameApplication {
                 .at(100, 100)
                 .type(PLAYER)
                 .bbox(new HitBox(BoundingShape.box(70, 60)))
-                .view(texture("bird.png").toAnimatedTexture(2, Duration.seconds(0.5)).loop())
+                .view(texture("player.png").toAnimatedTexture(2, Duration.seconds(0.5)).loop())
                 .collidable()
                 .with(playerComponent, new WallBuildingComponent(), new Floor())
                 .buildAndAttach();
