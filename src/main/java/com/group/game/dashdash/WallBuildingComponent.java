@@ -55,7 +55,7 @@ public class WallBuildingComponent extends Component {
             entityBuilder()
                     .at(lastWall + i * 500, 0 + topHeight + distance + 25)
                     .type(EntityType.WALL)
-                    .viewWithBBox(wallView(50, height - distance - topHeight))
+                    .viewWithBBox(wallView(75, height - distance - topHeight))
                     .with(new CollidableComponent(true))
                     .buildAndAttach();
         }
