@@ -1,9 +1,12 @@
 package com.group.game.dashdash;
 
-import com.almasb.fxgl.dsl.FXGL;
+import com.almasb.fxgl.entity.Entity;
 import com.almasb.fxgl.entity.component.Component;
 import com.almasb.fxgl.entity.components.CollidableComponent;
-import javafx.scene.shape.Rectangle;
+import com.almasb.fxgl.physics.BoundingShape;
+import com.almasb.fxgl.physics.HitBox;
+import javafx.geometry.Point2D;
+import javafx.scene.shape.Polygon;
 
 import static com.almasb.fxgl.dsl.FXGL.*;
 
@@ -17,12 +20,10 @@ public class WallBuildingComponent extends Component {
         GameMode mode = geto("mode");
         int level = geti("level");
 
-        // --- SCORE-BASED STOP CHECK ---
-        // If in Classic mode, stop building walls once the score target is reached
         if (mode == GameMode.Classic) {
             int winScore = level * 2000;
             if (geti("score") >= winScore) {
-                return; // Stop spawning so the player can sail to victory
+                return;
             }
         }
 
@@ -31,69 +32,94 @@ public class WallBuildingComponent extends Component {
         }
     }
 
+    private Polygon wallView(double width, double height) {
+        // Pointing UP
+        Polygon wall = new Polygon(
+                0.0, height,
+                width / 2.0, 0.0,
+                width, height
+        );
+        wall.fillProperty().bind(getWorldProperties().objectProperty("stageColor"));
+        return wall;
+    }
+
+    private Polygon spikeViewDown(double width, double height) {
+        // Pointing DOWN
+        Polygon spike = new Polygon(
+                0.0, 0.0,
+                width, 0.0,
+                width / 2.0, height
+        );
+        spike.fillProperty().bind(getWorldProperties().objectProperty("stageColor"));
+        return spike;
+    }
+
     private void buildWalls() {
-        GameMode mode = geto("mode");
-        int level = geti("level");
+        Entity player = getGameWorld().getSingleton(EntityType.PLAYER);
+        PlayerComponent pc = player.getComponent(PlayerComponent.class);
+        double currentSpeed = pc.getVelocityX();
 
-        // 1. Calculate current speed based on Mode and Level
-        double currentSpeed = (mode == GameMode.Endless) ? 400 : (400 + (level * 50));
+        // 1. Spacing between spike sets
+        double gapBetweenObstacles = currentSpeed * 1.5;
 
-        // 2. Calculate gap but cap it at 1500 pixels.
-        // This gives them 1.8 seconds of reaction time, but won't let the
-        // world feel empty if the speed gets super high.
-        double gapBetweenObstacles = Math.min(1500, currentSpeed * 1.8);
+        // 2. WIDER HOLE: Increased base passage to 400px.
+        // This ensures that even with high gravity, the "safe zone" is huge.
+        double playerPassage = 400 + (currentSpeed * 0.05);
 
         double screenHeight = getAppHeight();
-        double wallWidth = 50;
+        double wallWidth = 60; // Thinner walls are easier to pass
         double playableHeight = screenHeight - (FLOOR_THICKNESS * 2);
-
-        // 3. Keep the vertical passage fair.
-        // As the player goes faster, we give them a slightly larger hole to fly through.
-        double playerPassage = 320 + (currentSpeed * 0.1);
 
         for (int i = 1; i <= 5; i++) {
             double spawnX = lastWall + i * gapBetweenObstacles;
             double chance = Math.random();
 
-            if (chance < 0.25) {
-                // BOTH WALLS
+            if (chance < 0.30) {
+                // DOUBLE SPIKES
                 double totalWallSpace = playableHeight - playerPassage;
-                double topWallHeight = random(50, totalWallSpace - 50);
-                double bottomWallHeight = totalWallSpace - topWallHeight;
 
-                spawnWall(spawnX, FLOOR_THICKNESS, wallWidth, topWallHeight);
-                spawnWall(spawnX, screenHeight - FLOOR_THICKNESS - bottomWallHeight, wallWidth, bottomWallHeight);
+                // CENTERED HOLE: We limit the randomness so the hole
+                // isn't tucked too far into a corner.
+                double topHeight = random(totalWallSpace * 0.2, totalWallSpace * 0.8);
+                double bottomHeight = totalWallSpace - topHeight;
 
-            } else if (chance < 0.60) {
-                // FLOOR ONLY
-                double wallHeight = random(100, 400);
-                spawnWall(spawnX, screenHeight - FLOOR_THICKNESS - wallHeight, wallWidth, wallHeight);
+                spawnSpike(spawnX, FLOOR_THICKNESS, wallWidth, topHeight, true);
+                spawnSpike(spawnX, screenHeight - FLOOR_THICKNESS - bottomHeight, wallWidth, bottomHeight, false);
+
+            } else if (chance < 0.65) {
+                // FLOOR ONLY - Lowered height
+                double h = random(80, 250);
+                spawnSpike(spawnX, screenHeight - FLOOR_THICKNESS - h, wallWidth, h, false);
 
             } else if (chance < 0.95) {
-                // CEILING ONLY
-                double wallHeight = random(100, 400);
-                spawnWall(spawnX, FLOOR_THICKNESS, wallWidth, wallHeight);
+                // CEILING ONLY - Lowered height
+                double h = random(80, 250);
+                spawnSpike(spawnX, FLOOR_THICKNESS, wallWidth, h, true);
             }
-            // 5% chance of a pure empty stretch
         }
-
         lastWall += 5 * gapBetweenObstacles;
     }
 
-    private void spawnWall(double x, double y, double w, double h) {
+    private void spawnSpike(double x, double y, double w, double h, boolean pointingDown) {
+        Point2D p1, p2, p3;
+
+        if (pointingDown) {
+            p1 = new Point2D(0, 0);
+            p2 = new Point2D(w, 0);
+            p3 = new Point2D(w / 2.0, h);
+        } else {
+            p1 = new Point2D(0, h);
+            p2 = new Point2D(w / 2.0, 0);
+            p3 = new Point2D(w, h);
+        }
+
         entityBuilder()
                 .at(x, y)
                 .type(EntityType.WALL)
-                .viewWithBBox(wallView(w, h))
+                .view(pointingDown ? spikeViewDown(w, h) : wallView(w, h))
+                // Triangle Hitbox
+                .bbox(new HitBox(BoundingShape.polygon(p1, p2, p3)))
                 .with(new CollidableComponent(true))
                 .buildAndAttach();
-    }
-
-    private Rectangle wallView(double width, double height) {
-        Rectangle wall = new Rectangle(width, height);
-        wall.setArcWidth(10);
-        wall.setArcHeight(10);
-        wall.fillProperty().bind(getWorldProperties().objectProperty("stageColor"));
-        return wall;
     }
 }

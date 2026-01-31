@@ -6,9 +6,16 @@ import static com.almasb.fxgl.dsl.FXGL.*;
 
 public class PlayerComponent extends Component {
 
-    private final Vec2 velocity = new Vec2(200, 0); // start slower
+    private final Vec2 velocity = new Vec2(200, 0);
     private double gravityDirection = 1.0;
-    private final double GRAVITY_FORCE = 4000;
+
+    // --- NEW TUNED RATIO ---
+    // Lower gravity means you stay in the air much longer while moving forward.
+    private final double GRAVITY_FORCE = 1200;
+
+    // Snappy flip speed to get you moving, but the gravity above will keep you floating.
+    private final float JUMP_FORCE = 900;
+
     private boolean onSurface = false;
 
     @Override
@@ -17,8 +24,8 @@ public class PlayerComponent extends Component {
         GameMode mode = geto("mode");
         int level = geti("level");
 
-        // Set base speed: Level 1=450, Level 2=500, Level 3=550
-        float speed = (mode == GameMode.Classic) ? (400f + (level * 50f)) : 400f;
+        // Boosted base speed to 550. Faster forward movement = easier to clear gaps.
+        float speed = (mode == GameMode.Classic) ? (500f + (level * 50f)) : 550f;
         velocity.x = speed;
     }
 
@@ -26,15 +33,13 @@ public class PlayerComponent extends Component {
     public void onUpdate(double tpf) {
         // 1. If Endless, slowly increase speed over time
         if (geto("mode") == GameMode.Endless) {
-            velocity.x += (float) (5 * tpf);
+            velocity.x += (float) (8 * tpf); // Speed up slightly faster
         }
 
-        // 2. Apply gravity
         velocity.y += (GRAVITY_FORCE * gravityDirection * tpf);
 
-        // 3. Cap vertical speed (Increased to 700 to match higher horizontal speeds)
-        if (Math.abs(velocity.y) > 700) {
-            velocity.y = (float) (700 * gravityDirection);
+        if (Math.abs(velocity.y) > JUMP_FORCE) {
+            velocity.y = (float) (JUMP_FORCE * gravityDirection);
         }
 
         entity.translate(velocity.x * tpf, velocity.y * tpf);
@@ -46,8 +51,8 @@ public class PlayerComponent extends Component {
             gravityDirection *= -1;
             onSurface = false;
 
-
-            velocity.y = (float) (1200 * gravityDirection);
+            // Apply the gentle jump force
+            velocity.y = (float) (JUMP_FORCE * gravityDirection);
 
             entity.setScaleY(gravityDirection);
         }
@@ -58,5 +63,9 @@ public class PlayerComponent extends Component {
         if (onSurface) {
             velocity.y = 0;
         }
+    }
+
+    public double getVelocityX() {
+        return velocity.x;
     }
 }
