@@ -12,7 +12,7 @@ public class ColorChangingComponent extends Component {
 
     private Rectangle view;
     private LocalTimer timer;
-    private Duration interval = Duration.seconds(10000);
+    private final Duration interval = Duration.seconds(10000);
 
     @Override
     public void onAdded() {
