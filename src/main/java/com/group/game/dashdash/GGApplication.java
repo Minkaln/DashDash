@@ -5,30 +5,29 @@ import com.almasb.fxgl.app.GameApplication;
 import com.almasb.fxgl.app.GameSettings;
 import com.almasb.fxgl.entity.Entity;
 import com.almasb.fxgl.physics.CollisionHandler;
-import com.almasb.fxgl.input.UserAction;
-import com.almasb.fxgl.input.virtual.VirtualButton;
 import com.almasb.fxgl.physics.BoundingShape;
 import com.almasb.fxgl.physics.HitBox;
 import javafx.geometry.Point2D;
-import javafx.scene.Group;
-import javafx.scene.input.KeyCode;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Font;
 import javafx.scene.text.Text;
 import javafx.util.Duration;
+import javafx.scene.media.Media;
+import javafx.scene.media.MediaPlayer;
 
 import java.util.Map;
 
 import static com.almasb.fxgl.dsl.FXGLForKtKt.*;
-import static com.group.game.dashdash.EntityType.PLAYER;
-import static com.group.game.dashdash.EntityType.WALL;
-
+import static com.group.game.dashdash.EntityType.*;
 
 public class GGApplication extends GameApplication {
 
     private PlayerComponent playerComponent;
     private boolean requestNewGame = false;
+
+    // ✅ KEEP THIS AS A FIELD (IMPORTANT)
+    private MediaPlayer bgmPlayer;
 
     @Override
     protected void initSettings(GameSettings settings) {
@@ -36,73 +35,90 @@ public class GGApplication extends GameApplication {
         settings.setHeight(720);
         settings.setTitle("DashDash");
         settings.setVersion("0.0.5");
-        settings.setTicksPerSecond(60); //framerate important :D
-        settings.setMainMenuEnabled(true); // Optional: keeps it simple for testing
+        settings.setTicksPerSecond(60);
+        settings.setMainMenuEnabled(true);
         settings.setSceneFactory(new MenuFactory());
     }
+
     @Override
     protected void initInput() {
-        getInput().addAction(new UserAction("Jump") {
+        getInput().addAction(new com.almasb.fxgl.input.UserAction("Jump") {
             @Override
             protected void onActionBegin() {
                 if (playerComponent != null) {
                     playerComponent.flipGravity();
                 }
             }
-        }, KeyCode.SPACE);
+        }, javafx.scene.input.KeyCode.SPACE);
     }
 
     @Override
     protected void initGameVars(Map<String, Object> vars) {
-        // These MUST be here or the components will crash!
-        vars.put("mode", GameMode.Endless); // Default starting mode
-        vars.put("level", 1);               // Default starting level
-
+        vars.put("mode", GameMode.Endless);
+        vars.put("level", 1);
         vars.put("stageColor", Color.BLACK);
         vars.put("score", 0);
     }
 
-    @Override
-    protected void onPreInit() {
-        // Ensure assets/music/bgm.mp3 exists
-        loopBGM("bgm.mp3");
+    // 🎵 FIXED BGM METHOD
+    private void playBGM() {
+        if (bgmPlayer != null) {
+            bgmPlayer.stop();
+        }
+
+        var url = getClass().getResource("/assets/music/bgm.mp3");
+
+        if (url == null) {
+            System.out.println("❌ BGM not found!");
+            return;
+        }
+
+        Media media = new Media(url.toExternalForm());
+        bgmPlayer = new MediaPlayer(media);
+
+        bgmPlayer.setCycleCount(MediaPlayer.INDEFINITE);
+        bgmPlayer.setVolume(0.5);
+        bgmPlayer.play();
     }
 
     @Override
     protected void initGame() {
         initBackground();
+
         entityBuilder()
                 .with(new Floor())
                 .buildAndAttach();
+
+        playBGM(); // 🎵 now works correctly
+
         initPlayer();
     }
+
     @Override
     protected void initPhysics() {
-        getPhysicsWorld().addCollisionHandler(new CollisionHandler(PLAYER, EntityType.FLOOR) {
+        getPhysicsWorld().addCollisionHandler(new CollisionHandler(PLAYER, FLOOR) {
             @Override
             protected void onCollision(Entity player, Entity floor) {
-                // Snap logic
                 if (player.getY() > getAppHeight() / 2.0) {
                     player.setY(floor.getY() - player.getHeight());
                 } else {
                     player.setY(floor.getBottomY());
                 }
-
                 playerComponent.setOnSurface(true);
             }
         });
 
-        // Deadly walls
-        getPhysicsWorld().addCollisionHandler(new CollisionHandler(PLAYER, EntityType.WALL) {
+        getPhysicsWorld().addCollisionHandler(new CollisionHandler(PLAYER, WALL) {
             @Override
             protected void onCollisionBegin(Entity player, Entity wall) {
                 requestNewGame();
             }
         });
     }
+
     @Override
     protected void initUI() {
-        Text uiScore = new Text("");
+        Text uiScore = new Text();
         uiScore.setFont(Font.font(72));
         uiScore.setTranslateX(getAppWidth() - 200);
         uiScore.setTranslateY(160);
@@ -121,21 +137,17 @@ public class GGApplication extends GameApplication {
             return;
         }
 
-        inc("score", +1);
+        inc("score", 1);
 
-        // Get the current mode and level
         GameMode mode = geto("mode");
         int level = geti("level");
 
         if (mode == GameMode.Classic) {
-            // Example: Level 1 = 2000 score, Level 2 = 4000 score, etc.
             int winCondition = level * 2000;
-
             if (geti("score") >= winCondition) {
                 showWinMessage();
             }
         }
-        // In Endless mode, the score just keeps going forever!
     }
 
     private void initBackground() {
@@ -155,8 +167,8 @@ public class GGApplication extends GameApplication {
         playerComponent = new PlayerComponent();
 
         Rectangle cube = new Rectangle(70, 60);
-        cube.setFill(Color.DODGERBLUE);   // change color if you want
-        cube.setArcWidth(6);              // optional: rounded corners
+        cube.setFill(Color.DODGERBLUE);
+        cube.setArcWidth(6);
         cube.setArcHeight(6);
 
         Entity player = entityBuilder()
@@ -165,7 +177,7 @@ public class GGApplication extends GameApplication {
                 .bbox(new HitBox(BoundingShape.box(70, 60)))
                 .view(cube)
                 .collidable()
-                .with(playerComponent, new WallBuildingComponent(), new Floor())
+                .with(playerComponent, new WallBuildingComponent())
                 .buildAndAttach();
 
         getGameScene().getViewport().setBounds(0, 0, Integer.MAX_VALUE, getAppHeight());
@@ -189,13 +201,13 @@ public class GGApplication extends GameApplication {
     }
 
     private void showWinMessage() {
-        // Stop the game and show a victory message
         showMessage("Level " + geti("level") + " Complete!", () -> {
             getGameController().gotoMainMenu();
             return null;
         });
     }
-    static void main(String[] args) {
+
+    public static void main(String[] args) {
         launch(args);
     }
 }
