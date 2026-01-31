@@ -28,6 +28,15 @@ public class WallBuildingComponent extends Component {
         wall.fillProperty().bind(FXGL.getWorldProperties().objectProperty("stageColor"));
         return wall;
     }
+    private Polygon spikeViewDown(double width, double height) {
+        Polygon spike = new Polygon(
+                0.0, 0.0,
+                width, 0.0,
+                width / 2, height   // sharp tip DOWN
+        );
+        spike.fillProperty().bind(FXGL.getWorldProperties().objectProperty("stageColor"));
+        return spike;
+    }
 
     private void buildWalls() {
         double height = FXGL.getAppHeight();
