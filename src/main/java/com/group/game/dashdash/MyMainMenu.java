@@ -12,25 +12,44 @@ public class MyMainMenu extends FXGLMenu {
     public MyMainMenu() {
         super(MenuType.MAIN_MENU);
 
-        // 1. Add a background color or image
         Rectangle bg = new Rectangle(FXGL.getAppWidth(), FXGL.getAppHeight(), Color.BLACK);
         getContentRoot().getChildren().add(bg);
 
-        // 2. Add a Title
         Text title = FXGL.getUIFactoryService().newText("DASH DASH", Color.WHITE, 60);
         title.setTranslateX(FXGL.getAppWidth() / 2.0 - 150);
-        title.setTranslateY(200);
-
+        title.setTranslateY(150);
         getContentRoot().getChildren().add(title);
 
-        // 3. Add a "Start Game" button
-        var btn = FXGL.getUIFactoryService().newButton("PLAY");
-        btn.setTranslateX(FXGL.getAppWidth() / 2.0 - 50);
-        btn.setTranslateY(400);
+        // --- ENDLESS MODE BUTTON ---
+        var btnEndless = FXGL.getUIFactoryService().newButton("ENDLESS MODE");
+        btnEndless.setTranslateX(FXGL.getAppWidth() / 2.0 - 100);
+        btnEndless.setTranslateY(300);
+        btnEndless.setOnAction(e -> {
+            FXGL.set("mode", GameMode.Endless); // Set the mocde
+            fireNewGame();
+        });
 
-        // This is the magic line that starts the game
-        btn.setOnAction(e -> fireNewGame());
+        // --- CLASSIC MODE (LEVELS) ---
+        Text classicText = FXGL.getUIFactoryService().newText("CLASSIC LEVELS", Color.GRAY, 30);
+        classicText.setTranslateX(FXGL.getAppWidth() / 2.0 - 100);
+        classicText.setTranslateY(400);
 
-        getContentRoot().getChildren().add(btn);
+        getContentRoot().getChildren().addAll(btnEndless, classicText);
+
+        // Create 3 Level Buttons
+        for (int i = 1; i <= 3; i++) {
+            int levelNum = i;
+            var btnLevel = FXGL.getUIFactoryService().newButton("Level " + levelNum);
+            btnLevel.setTranslateX(FXGL.getAppWidth() / 2.0 - 250 + (i * 120));
+            btnLevel.setTranslateY(450);
+
+            btnLevel.setOnAction(e -> {
+                FXGL.set("mode", GameMode.Classic); // Set mode to Classic
+                FXGL.set("level", levelNum);        // Set the specific level
+                fireNewGame();
+            });
+
+            getContentRoot().getChildren().add(btnLevel);
+        }
     }
 }

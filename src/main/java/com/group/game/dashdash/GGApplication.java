@@ -25,7 +25,7 @@ import static com.group.game.dashdash.EntityType.PLAYER;
 import static com.group.game.dashdash.EntityType.WALL;
 
 
-public class HelloApplication extends GameApplication {
+public class GGApplication extends GameApplication {
 
     private PlayerComponent playerComponent;
     private boolean requestNewGame = false;
@@ -36,6 +36,7 @@ public class HelloApplication extends GameApplication {
         settings.setHeight(720);
         settings.setTitle("DashDash");
         settings.setVersion("0.0.5");
+        settings.setTicksPerSecond(60); //framerate important :D
         settings.setMainMenuEnabled(true); // Optional: keeps it simple for testing
         settings.setSceneFactory(new MenuFactory());
     }
@@ -53,6 +54,10 @@ public class HelloApplication extends GameApplication {
 
     @Override
     protected void initGameVars(Map<String, Object> vars) {
+        // These MUST be here or the components will crash!
+        vars.put("mode", GameMode.Endless); // Default starting mode
+        vars.put("level", 1);               // Default starting level
+
         vars.put("stageColor", Color.BLACK);
         vars.put("score", 0);
     }
@@ -100,15 +105,12 @@ public class HelloApplication extends GameApplication {
         Text uiScore = new Text("");
         uiScore.setFont(Font.font(72));
         uiScore.setTranslateX(getAppWidth() - 200);
-        uiScore.setTranslateY(60);
+        uiScore.setTranslateY(160);
 
         uiScore.fillProperty().bind(getop("stageColor"));
         uiScore.textProperty().bind(getip("score").asString());
 
         addUINode(uiScore);
-
-        Group dpadView = getInput().createVirtualDpadView();
-        addUINode(dpadView, 50, 425);
     }
 
     @Override
@@ -116,15 +118,24 @@ public class HelloApplication extends GameApplication {
         if (requestNewGame) {
             requestNewGame = false;
             getGameController().startNewGame();
-            return; // Exit update early if restarting
+            return;
         }
 
-        // Optional: Only increment score if player is actually moving
         inc("score", +1);
 
-        if (geti("score") == 1000) {
-            showGameOver();
+        // Get the current mode and level
+        GameMode mode = geto("mode");
+        int level = geti("level");
+
+        if (mode == GameMode.Classic) {
+            // Example: Level 1 = 2000 score, Level 2 = 4000 score, etc.
+            int winCondition = level * 2000;
+
+            if (geti("score") >= winCondition) {
+                showWinMessage();
+            }
         }
+        // In Endless mode, the score just keeps going forever!
     }
 
     private void initBackground() {
@@ -143,9 +154,9 @@ public class HelloApplication extends GameApplication {
     private void initPlayer() {
         playerComponent = new PlayerComponent();
         Entity player = entityBuilder()
-                .at(100, 100)
+                .at(0, 0)
                 .type(PLAYER)
-                .bbox(new HitBox(BoundingShape.box(70, 60)))
+                .bbox(new HitBox(BoundingShape.box(50, 60)))
                 .view(texture("bird.png").toAnimatedTexture(2, Duration.seconds(0.5)).loop())
                 .collidable()
                 .with(playerComponent, new WallBuildingComponent(), new Floor())
@@ -168,13 +179,13 @@ public class HelloApplication extends GameApplication {
         requestNewGame = true;
     }
 
-    private void showGameOver() {
-        showMessage("GG you win.  Thanks for playing!", () -> {
-            getGameController().exit();
+    private void showWinMessage() {
+        // Stop the game and show a victory message
+        showMessage("Level " + geti("level") + " Complete!", () -> {
+            getGameController().gotoMainMenu();
             return null;
         });
     }
-
     static void main(String[] args) {
         launch(args);
     }
