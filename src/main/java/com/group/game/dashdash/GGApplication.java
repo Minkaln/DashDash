@@ -135,7 +135,6 @@ public class GGApplication extends GameApplication {
                 showWinMessage();
             }
         }
-        // In Endless mode, the score just keeps going forever!
     }
 
     private void initBackground() {
@@ -153,11 +152,17 @@ public class GGApplication extends GameApplication {
 
     private void initPlayer() {
         playerComponent = new PlayerComponent();
+
+        Rectangle cube = new Rectangle(70, 60);
+        cube.setFill(Color.DODGERBLUE);   // change color if you want
+        cube.setArcWidth(6);              // optional: rounded corners
+        cube.setArcHeight(6);
+
         Entity player = entityBuilder()
                 .at(0, 0)
                 .type(PLAYER)
-                .bbox(new HitBox(BoundingShape.box(50, 60)))
-                .view(texture("bird.png").toAnimatedTexture(2, Duration.seconds(0.5)).loop())
+                .bbox(new HitBox(BoundingShape.box(70, 60)))
+                .view(cube)
                 .collidable()
                 .with(playerComponent, new WallBuildingComponent(), new Floor())
                 .buildAndAttach();
@@ -165,7 +170,6 @@ public class GGApplication extends GameApplication {
         getGameScene().getViewport().setBounds(0, 0, Integer.MAX_VALUE, getAppHeight());
         getGameScene().getViewport().bindToEntity(player, getAppWidth() / 3.0, getAppHeight() / 2.0);
 
-        // Standard FXGL way to animate an entity spawn in Java
         animationBuilder()
                 .duration(Duration.seconds(0.86))
                 .interpolator(Interpolators.BOUNCE.EASE_OUT())
