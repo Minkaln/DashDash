@@ -32,9 +32,6 @@ public class GGApplication extends GameApplication {
     // 🎵 Keep BGM alive
     private MediaPlayer bgmPlayer;
 
-    // 🖼 Keep background alive
-    private ImageView backgroundView;
-
     @Override
     protected void initSettings(GameSettings settings) {
         settings.setWidth(1280);
@@ -108,7 +105,8 @@ public class GGApplication extends GameApplication {
         }
 
         Image bgImage = new Image(url.toExternalForm());
-        backgroundView = new ImageView(bgImage);
+        // 🖼 Keep background alive
+        ImageView backgroundView = new ImageView(bgImage);
 
         backgroundView.setFitWidth(getAppWidth());
         backgroundView.setFitHeight(getAppHeight());
