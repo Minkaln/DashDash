@@ -8,6 +8,9 @@ import com.almasb.fxgl.physics.CollisionHandler;
 import com.almasb.fxgl.physics.BoundingShape;
 import com.almasb.fxgl.physics.HitBox;
 import javafx.geometry.Point2D;
+import javafx.scene.Group;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Font;
@@ -26,8 +29,11 @@ public class GGApplication extends GameApplication {
     private PlayerComponent playerComponent;
     private boolean requestNewGame = false;
 
-    // ✅ KEEP THIS AS A FIELD (IMPORTANT)
+    // 🎵 Keep BGM alive
     private MediaPlayer bgmPlayer;
+
+    // 🖼 Keep background alive
+    private ImageView backgroundView;
 
     @Override
     protected void initSettings(GameSettings settings) {
@@ -60,7 +66,7 @@ public class GGApplication extends GameApplication {
         vars.put("score", 0);
     }
 
-    // 🎵 FIXED BGM METHOD
+    // 🎵 BGM
     private void playBGM() {
         if (bgmPlayer != null) {
             bgmPlayer.stop();
@@ -69,13 +75,12 @@ public class GGApplication extends GameApplication {
         var url = getClass().getResource("/assets/music/bgm.mp3");
 
         if (url == null) {
-            System.out.println("❌ BGM not found!");
+            System.out.println("❌ BGM not found");
             return;
         }
 
         Media media = new Media(url.toExternalForm());
         bgmPlayer = new MediaPlayer(media);
-
         bgmPlayer.setCycleCount(MediaPlayer.INDEFINITE);
         bgmPlayer.setVolume(0.5);
         bgmPlayer.play();
@@ -83,15 +88,40 @@ public class GGApplication extends GameApplication {
 
     @Override
     protected void initGame() {
-        initBackground();
+        initBackground();   // 🖼 PNG background
+        playBGM();          // 🎵 music
 
         entityBuilder()
                 .with(new Floor())
                 .buildAndAttach();
 
-        playBGM(); // 🎵 now works correctly
-
         initPlayer();
+    }
+
+    // 🖼 PNG BACKGROUND (FIXED)
+    private void initBackground() {
+        var url = getClass().getResource("/assets/textures/background.png");
+
+        if (url == null) {
+            System.out.println("❌ Background image not found");
+            return;
+        }
+
+        Image bgImage = new Image(url.toExternalForm());
+        backgroundView = new ImageView(bgImage);
+
+        backgroundView.setFitWidth(getAppWidth());
+        backgroundView.setFitHeight(getAppHeight());
+        backgroundView.setPreserveRatio(false);
+
+        Entity bg = entityBuilder()
+                .view(backgroundView)
+                .zIndex(-100) // stay behind everything
+                .buildAndAttach();
+
+        // Follow camera
+        bg.xProperty().bind(getGameScene().getViewport().xProperty());
+        bg.yProperty().bind(getGameScene().getViewport().yProperty());
     }
 
     @Override
@@ -138,44 +168,47 @@ public class GGApplication extends GameApplication {
         }
 
         inc("score", 1);
-
-        GameMode mode = geto("mode");
-        int level = geti("level");
-
-        if (mode == GameMode.Classic) {
-            int winCondition = level * 2000;
-            if (geti("score") >= winCondition) {
-                showWinMessage();
-            }
-        }
-    }
-
-    private void initBackground() {
-        Rectangle rect = new Rectangle(getAppWidth(), getAppHeight(), Color.WHITE);
-
-        Entity bg = entityBuilder()
-                .view(rect)
-                .with("rect", rect)
-                .with(new ColorChangingComponent())
-                .buildAndAttach();
-
-        bg.xProperty().bind(getGameScene().getViewport().xProperty());
-        bg.yProperty().bind(getGameScene().getViewport().yProperty());
     }
 
     private void initPlayer() {
         playerComponent = new PlayerComponent();
 
+        // 🟦 Player body
         Rectangle cube = new Rectangle(70, 60);
         cube.setFill(Color.DODGERBLUE);
         cube.setArcWidth(6);
         cube.setArcHeight(6);
 
+        // 👀 Eyes
+        Rectangle leftEye = new Rectangle(8, 8, Color.BLACK);
+        Rectangle rightEye = new Rectangle(8, 8, Color.BLACK);
+
+        leftEye.setTranslateX(18);
+        leftEye.setTranslateY(18);
+
+        rightEye.setTranslateX(44);
+        rightEye.setTranslateY(18);
+
+        // 👄 Mouth (._.)
+        Text mouth = new Text("O");
+        mouth.setFill(Color.BLACK);
+        mouth.setStyle("-fx-font-size: 14px; -fx-font-weight: bold;");
+        mouth.setTranslateX(26);
+        mouth.setTranslateY(42);
+
+        // 🧩 Combine face + body
+        Group playerView = new Group(
+                cube,
+                leftEye,
+                rightEye,
+                mouth
+        );
+
         Entity player = entityBuilder()
                 .at(0, 0)
                 .type(PLAYER)
                 .bbox(new HitBox(BoundingShape.box(70, 60)))
-                .view(cube)
+                .view(playerView)
                 .collidable()
                 .with(playerComponent, new WallBuildingComponent())
                 .buildAndAttach();
@@ -196,15 +229,9 @@ public class GGApplication extends GameApplication {
                 .buildAndPlay();
     }
 
+
     public void requestNewGame() {
         requestNewGame = true;
-    }
-
-    private void showWinMessage() {
-        showMessage("Level " + geti("level") + " Complete!", () -> {
-            getGameController().gotoMainMenu();
-            return null;
-        });
     }
 
     public static void main(String[] args) {
