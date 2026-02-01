@@ -6,11 +6,9 @@ import com.almasb.fxgl.app.GameSettings;
 import com.almasb.fxgl.entity.Entity;
 import com.almasb.fxgl.physics.CollisionHandler;
 import com.almasb.fxgl.input.UserAction;
-import com.almasb.fxgl.input.virtual.VirtualButton;
 import com.almasb.fxgl.physics.BoundingShape;
 import com.almasb.fxgl.physics.HitBox;
 import javafx.geometry.Point2D;
-import javafx.scene.Group;
 import javafx.scene.input.KeyCode;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
@@ -22,7 +20,6 @@ import java.util.Map;
 
 import static com.almasb.fxgl.dsl.FXGLForKtKt.*;
 import static com.group.game.dashdash.EntityType.PLAYER;
-import static com.group.game.dashdash.EntityType.WALL;
 
 
 public class GGApplication extends GameApplication {
@@ -35,7 +32,7 @@ public class GGApplication extends GameApplication {
         settings.setWidth(1280);
         settings.setHeight(720);
         settings.setTitle("DashDash");
-        settings.setVersion("0.0.5");
+        settings.setVersion("0.0.10");
         settings.setTicksPerSecond(60); //framerate important :D
         settings.setMainMenuEnabled(true); // Optional: keeps it simple for testing
         settings.setSceneFactory(new MenuFactory());
@@ -135,7 +132,6 @@ public class GGApplication extends GameApplication {
                 showWinMessage();
             }
         }
-        // In Endless mode, the score just keeps going forever!
     }
 
     private void initBackground() {
@@ -153,19 +149,28 @@ public class GGApplication extends GameApplication {
 
     private void initPlayer() {
         playerComponent = new PlayerComponent();
+
+        Rectangle cube = new Rectangle(70, 60);
+        cube.setFill(Color.DODGERBLUE);   // change color if you want
+        cube.setArcWidth(6);              // optional: rounded corners
+        cube.setArcHeight(6);
+
         Entity player = entityBuilder()
                 .at(0, 0)
                 .type(PLAYER)
-                .bbox(new HitBox(BoundingShape.box(50, 60)))
-                .view(texture("bird.png").toAnimatedTexture(2, Duration.seconds(0.5)).loop())
+                .bbox(new HitBox(BoundingShape.box(70, 60)))
+                .view(cube)
                 .collidable()
                 .with(playerComponent, new WallBuildingComponent(), new Floor())
                 .buildAndAttach();
 
         getGameScene().getViewport().setBounds(0, 0, Integer.MAX_VALUE, getAppHeight());
-        getGameScene().getViewport().bindToEntity(player, getAppWidth() / 3.0, getAppHeight() / 2.0);
+        getGameScene().getViewport().bindToEntity(
+                player,
+                getAppWidth() / 3.0,
+                getAppHeight() / 2.0
+        );
 
-        // Standard FXGL way to animate an entity spawn in Java
         animationBuilder()
                 .duration(Duration.seconds(0.86))
                 .interpolator(Interpolators.BOUNCE.EASE_OUT())
