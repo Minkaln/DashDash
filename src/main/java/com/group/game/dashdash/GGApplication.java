@@ -25,7 +25,11 @@ public class GGApplication extends GameApplication {
 
     private PlayerComponent playerComponent;
     private boolean requestNewGame = false;
-    private AudioManager audioManager; // Added manager
+    private AudioManager audioManager;
+
+    // --- SAVE SYSTEM VARIABLES ---
+    private SaveData saveData;
+    private static final String SAVE_FILE = "save_data.dat";
 
     @Override
     protected void initSettings(GameSettings settings) {
@@ -37,11 +41,21 @@ public class GGApplication extends GameApplication {
         settings.setMainMenuEnabled(true);
         settings.setSceneFactory(new MenuFactory());
     }
-
     @Override
     protected void onPreInit() {
         audioManager = new AudioManager();
         audioManager.startPlaylist();
+
+        if (getFileSystemService().exists(SAVE_FILE)) {
+            // Load existing progress
+            saveData = (SaveData) getFileSystemService().readDataTask(SAVE_FILE).run();
+            System.out.println("Save data loaded successfully.");
+        } else {
+            // Create new progress for a new player
+            saveData = new SaveData();
+            saveGame(); // Create the physical file immediately
+            System.out.println("No save file found. Created a new one.");
+        }
     }
 
     @Override
@@ -51,7 +65,7 @@ public class GGApplication extends GameApplication {
             protected void onActionBegin() {
                 if (playerComponent != null) {
                     playerComponent.flipGravity();
-                    audioManager.playJumpSound(); // Trigger jump sound
+                    audioManager.playJumpSound();
                 }
             }
         }, KeyCode.SPACE);
@@ -63,6 +77,8 @@ public class GGApplication extends GameApplication {
         vars.put("level", 1);
         vars.put("stageColor", Color.BLACK);
         vars.put("score", 0);
+        // 2. Add highscore to game variables so UI can bind to it
+        vars.put("highscore", saveData.highscore);
     }
 
     @Override
@@ -96,13 +112,24 @@ public class GGApplication extends GameApplication {
 
     @Override
     protected void initUI() {
+        // Current Score
         Text uiScore = new Text("");
         uiScore.setFont(Font.font(72));
         uiScore.setTranslateX(getAppWidth() - 200);
-        uiScore.setTranslateY(160);
+        uiScore.setTranslateY(100); // Shifted up slightly
         uiScore.fillProperty().bind(getop("stageColor"));
         uiScore.textProperty().bind(getip("score").asString());
+
+        // 3. High Score Display
+        Text uiHighscore = new Text("");
+        uiHighscore.setFont(Font.font(24));
+        uiHighscore.setTranslateX(getAppWidth() - 200);
+        uiHighscore.setTranslateY(140);
+        uiHighscore.setFill(Color.GRAY);
+        uiHighscore.textProperty().bind(getip("highscore").asString().concat(" (Best)"));
+
         addUINode(uiScore);
+        addUINode(uiHighscore);
     }
 
     @Override
@@ -114,8 +141,6 @@ public class GGApplication extends GameApplication {
         }
 
         inc("score", +1);
-
-        // Update the music/playlist logic
         audioManager.onUpdate(tpf);
 
         GameMode mode = geto("mode");
@@ -129,11 +154,38 @@ public class GGApplication extends GameApplication {
     }
 
     private void showWinMessage() {
+        // 4. Update unlocked levels progress
+        int currentLevel = geti("level");
+        if (currentLevel >= saveData.unlockedLevel) {
+            saveData.unlockedLevel = currentLevel + 1;
+            saveGame();
+        }
+
         showMessage("Level " + geti("level") + " Complete!", () -> {
             getGameController().gotoMainMenu();
             return null;
         });
     }
+
+    private void saveGame() {
+        getFileSystemService().writeDataTask(saveData, SAVE_FILE);
+    }
+
+    public void requestNewGame() {
+        audioManager.playCrashSound();
+
+        // 5. Check and save highscore before restarting
+        int finalScore = geti("score");
+        if (finalScore > saveData.highscore) {
+            saveData.highscore = finalScore;
+            set("highscore", finalScore); // Update visible UI
+            saveGame();
+        }
+
+        requestNewGame = true;
+    }
+
+    // ... initBackground, initPlayer, and main remain the same ...
 
     private void initBackground() {
         Rectangle rect = new Rectangle(getAppWidth(), getAppHeight(), Color.WHITE);
@@ -177,11 +229,6 @@ public class GGApplication extends GameApplication {
                 .from(new Point2D(0, 0))
                 .to(new Point2D(1, 1))
                 .buildAndPlay();
-    }
-
-    public void requestNewGame() {
-        audioManager.playCrashSound(); // Trigger crash sound
-        requestNewGame = true;
     }
 
     public static void main(String[] args) {

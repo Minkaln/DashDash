@@ -24,24 +24,30 @@ public class MyMainMenu extends FXGLMenu {
         var btnEndless = FXGL.getUIFactoryService().newButton("ENDLESS MODE");
         btnEndless.setTranslateX(FXGL.getAppWidth() / 2.0 - 100);
         btnEndless.setTranslateY(300);
+
+        // Uses the AudioManager class directly
+        btnEndless.setOnMouseEntered(e -> AudioManager.playHoverSound());
+
         btnEndless.setOnAction(e -> {
             FXGL.set("mode", GameMode.Endless);
             fireNewGame();
         });
 
-        // --- CLASSIC MODE (LEVELS) ---
         Text classicText = FXGL.getUIFactoryService().newText("CLASSIC LEVELS", Color.GRAY, 30);
         classicText.setTranslateX(FXGL.getAppWidth() / 2.0 - 100);
         classicText.setTranslateY(400);
 
         getContentRoot().getChildren().addAll(btnEndless, classicText);
 
-        // Create 3 Level Buttons
+        // --- LEVEL BUTTONS ---
         for (int i = 1; i <= 3; i++) {
             int levelNum = i;
             var btnLevel = FXGL.getUIFactoryService().newButton("Level " + levelNum);
             btnLevel.setTranslateX(FXGL.getAppWidth() / 2.0 - 250 + (i * 120));
             btnLevel.setTranslateY(450);
+
+            // Trigger the sound from the manager
+            btnLevel.setOnMouseEntered(e -> AudioManager.playHoverSound());
 
             btnLevel.setOnAction(e -> {
                 FXGL.set("mode", GameMode.Classic);
@@ -52,24 +58,20 @@ public class MyMainMenu extends FXGLMenu {
             getContentRoot().getChildren().add(btnLevel);
         }
 
-        // --- DEBUG SOUND TEST BUTTON ---
-        // Add this to verify if the engine can play your files
-// Locate the DEBUG button section in MyMainMenu constructor
+        // --- DEBUG BUTTON ---
         var btnDebug = FXGL.getUIFactoryService().newButton("DEBUG: PLAY TTEN");
         btnDebug.setTranslateX(20);
         btnDebug.setTranslateY(FXGL.getAppHeight() - 60);
+
+        btnDebug.setOnMouseEntered(e -> AudioManager.playHoverSound());
+
         btnDebug.setOnAction(e -> {
-            var loader = FXGL.getAssetLoader();
+            // Simplified debug action
             try {
-                var music = loader.loadMusic("TTEN.wav");
-                if (music == null) {
-                    System.out.println("Loader returned NULL - File definitely missing.");
-                } else {
-                    FXGL.getAudioPlayer().playMusic(music);
-                    System.out.println("Debug: Success - Music object created!");
-                }
+                var music = FXGL.getAssetLoader().loadMusic("TTEN.wav");
+                FXGL.getAudioPlayer().playMusic(music);
             } catch (Exception err) {
-                err.printStackTrace();
+                System.out.println("Debug Playback Failed: " + err.getMessage());
             }
         });
         getContentRoot().getChildren().add(btnDebug);

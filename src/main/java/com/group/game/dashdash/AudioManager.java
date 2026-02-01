@@ -1,5 +1,6 @@
 package com.group.game.dashdash;
 
+import com.almasb.fxgl.audio.Music;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -17,21 +18,33 @@ public class AudioManager {
     private double fadeMultiplier = 0;
     private double userMenuVolume = 1.0;
 
+    // Track the actual music object so we can stop it specifically
+    private Music currentMusic;
+
     public AudioManager() {
-        // Initialize your playlist
         playlist.add("TTEN.wav");
         playlist.add("LELN.wav");
         playlist.add("JANA.wav");
     }
 
     public void startPlaylist() {
+        // SAFETY: If a playlist is already running, don't start a duplicate one!
+        if (playlistStarted) return;
+
         playNextSong();
     }
 
     private void playNextSong() {
         if (playlist.isEmpty()) return;
 
+        // 1. Stop the specific current song if it exists
+        if (currentMusic != null) {
+            getAudioPlayer().stopMusic(currentMusic);
+        }
+
+        // 2. Extra safety: stop anything else in the music channel
         getAudioPlayer().stopAllMusic();
+
         fadeMultiplier = 0;
         userMenuVolume = getSettings().getGlobalMusicVolume();
         getSettings().setGlobalMusicVolume(0);
@@ -46,8 +59,10 @@ public class AudioManager {
         lastPlayedSong = nextSong;
 
         try {
-            var music = getAssetLoader().loadMusic(nextSong);
-            getAudioPlayer().playMusic(music);
+            // Store the music object so we have a direct handle on it
+            currentMusic = getAssetLoader().loadMusic(nextSong);
+            getAudioPlayer().playMusic(currentMusic);
+            System.out.println("Now Playing: " + nextSong);
         } catch (Exception e) {
             System.out.println("Playlist Error: " + nextSong);
         }
@@ -55,21 +70,20 @@ public class AudioManager {
         musicTimer = 0;
         playlistStarted = true;
 
-        // Using a switch is cleaner as you add more music
         currentSongDuration = switch (nextSong) {
-            case "TTEN.wav" -> 95;
-            case "LELN.wav" -> 80;
-            case "JANA.wav" -> 93;
-            default -> 100;
+            case "TTEN.wav" -> 95.0;
+            case "LELN.wav" -> 80.0;
+            case "JANA.wav" -> 93.0;
+            default -> 100.0;
         };
     }
 
-    // Call this in GGApplication's onUpdate
     public void onUpdate(double tpf) {
         if (!playlistStarted) return;
 
         musicTimer += tpf;
 
+        // Fading Logic
         if (musicTimer >= (currentSongDuration - 3.0)) {
             fadeMultiplier -= tpf * 0.35;
         } else if (musicTimer <= 3.0) {
@@ -87,17 +101,21 @@ public class AudioManager {
         }
 
         if (musicTimer >= currentSongDuration) {
-            playlistStarted = false;
+            playlistStarted = false; // Reset to allow next song to trigger
             playNextSong();
         }
     }
 
-    // --- SOUND EFFECTS METHODS ---
-    public void playJumpSound() {
-        play("jump_sfx.wav"); // FXGL DSL method for short sounds
+    // --- STATIC SOUND EFFECTS ---
+    public static void playHoverSound() {
+        play("hover.wav");
     }
 
-    public void playCrashSound() {
+    public static void playJumpSound() {
+        play("jump_sfx.wav");
+    }
+
+    public static void playCrashSound() {
         play("crash.wav");
     }
 }
