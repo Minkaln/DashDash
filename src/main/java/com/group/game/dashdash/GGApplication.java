@@ -80,7 +80,7 @@ public class GGApplication extends GameApplication {
     protected void initGameVars(Map<String, Object> vars) {
         vars.put("mode", GameMode.Endless);
         vars.put("stageColor", Color.BLACK);
-        vars.put("score", 0.0); // Changed to 0.0 because TPF results in doubles
+        vars.put("score", 0.0);
         vars.put("highscore", (double) saveData.highscore);
     }
 
@@ -92,7 +92,7 @@ public class GGApplication extends GameApplication {
     }
 
     private void initBackground() {
-        var url = getClass().getResource("/assets/textures/background.png");
+        var url = getClass().getResource("/assets/textures/gd_bg3.jpg");
         if (url == null) return;
         Image bgImage = new Image(url.toExternalForm());
         ImageView backgroundView = new ImageView(bgImage);
@@ -108,7 +108,6 @@ public class GGApplication extends GameApplication {
         getPhysicsWorld().addCollisionHandler(new CollisionHandler(PLAYER, EntityType.FLOOR) {
             @Override
             protected void onCollision(Entity player, Entity floor) {
-                // Snap logic
                 if (player.getY() > getAppHeight() / 2.0) {
                     player.setY(floor.getY() - player.getHeight());
                 } else {
@@ -118,7 +117,6 @@ public class GGApplication extends GameApplication {
             }
         });
 
-        // Deadly walls
         getPhysicsWorld().addCollisionHandler(new CollisionHandler(PLAYER, EntityType.WALL) {
             @Override
             protected void onCollisionBegin(Entity player, Entity wall) {
@@ -132,11 +130,11 @@ public class GGApplication extends GameApplication {
         Text uiScore = new Text("");
         uiScore.setFont(Font.font(72));
         uiScore.setTranslateX(getAppWidth() - 200);
-        uiScore.setTranslateY(100); // Shifted up slightly
+        uiScore.setTranslateY(100);
         uiScore.setFill(Color.WHITE);
-        uiScore.textProperty().bind(getip("score").asString());
 
-        // Use asString("%.0f") to keep the UI showing whole numbers
+        // FIXED: Removed the getip() line that caused the crash.
+        // Using getdp() with formatting to show as a whole number.
         uiScore.textProperty().bind(getdp("score").asString("%.0f"));
 
         Text uiHighscore = new Text("");
@@ -144,7 +142,9 @@ public class GGApplication extends GameApplication {
         uiHighscore.setTranslateX(getAppWidth() - 200);
         uiHighscore.setTranslateY(140);
         uiHighscore.setFill(Color.WHITE);
-        uiHighscore.textProperty().bind(getip("highscore").asString().concat(" (Best)"));
+
+        // FIXED: Changed getip to getdp to match the Double initialization in initGameVars.
+        uiHighscore.textProperty().bind(getdp("highscore").asString("%.0f").concat(" (Best)"));
 
         addUINode(uiScore);
         addUINode(uiHighscore);
@@ -154,7 +154,6 @@ public class GGApplication extends GameApplication {
     protected void onUpdate(double tpf) {
         if (!getWorldProperties().exists("score")) return;
 
-        // FIXED: Smoother score calculation using Delta Time (tpf)
         double pointsPerSecond = 60;
         inc("score", pointsPerSecond * tpf);
 
@@ -170,12 +169,10 @@ public class GGApplication extends GameApplication {
     public void onPlayerDied() {
         AudioManager.playCrashSound();
 
-        // --- FIX: Use getd() instead of geti() ---
         int finalScore = (int) getd("score");
 
         if (finalScore > saveData.highscore) {
             saveData.highscore = finalScore;
-            // Highscore is stored as double in initGameVars for UI binding
             set("highscore", (double) finalScore);
             saveGame();
         }
