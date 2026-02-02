@@ -1,3 +1,6 @@
+![Alt text](1.png)
+![Alt text](2.png)
+
 # DashDash
 
 A fast-paced, gravity-flipping arcade runner built with JavaFX and FXGL.
