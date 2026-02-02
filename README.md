@@ -25,6 +25,10 @@ Lead Developer - @Minkaln
 Developer - @SakadareachMao
 [@Sakadareach](https://www.facebook.com/sakadareach.mao)
 
+RickyRubixCube
+Developer - @RickyRubixCube
+[@RickyRubixCube]()
+
 ## License
 
 This project is licensed under the MIT License - see the LICENSE.md file for details
