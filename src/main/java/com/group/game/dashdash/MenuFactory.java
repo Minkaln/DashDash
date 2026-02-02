@@ -10,7 +10,7 @@ public class MenuFactory extends SceneFactory {
     @NotNull
     @Override
     public FXGLMenu newMainMenu() {
-        // We will create this class in the next step
+
         return new MyMainMenu();
     }
 }
