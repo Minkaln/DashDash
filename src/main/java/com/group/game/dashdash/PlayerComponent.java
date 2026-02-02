@@ -9,40 +9,37 @@ public class PlayerComponent extends Component {
     private final Vec2 velocity = new Vec2(200, 0);
     private double gravityDirection = 1.0;
 
-    // --- NEW TUNED RATIO ---
-    // Lower gravity means you stay in the air much longer while moving forward.
     private final double GRAVITY_FORCE = 1200;
-
-    // Snappy flip speed to get you moving, but the gravity above will keep you floating.
     private final float JUMP_FORCE = 900;
 
     private boolean onSurface = false;
 
     @Override
     public void onAdded() {
-        // Read mode and level from GameVars
-        GameMode mode = geto("mode");
-        int level = geti("level");
-
-        // Boosted base speed to 550. Faster forward movement = easier to clear gaps.
-        float speed = (mode == GameMode.Classic) ? (500f + (level * 50f)) : 550f;
-        velocity.x = speed;
+        velocity.x = 550f;
     }
 
     @Override
     public void onUpdate(double tpf) {
-        // 1. If Endless, slowly increase speed over time
-        if (geto("mode") == GameMode.Endless) {
-            velocity.x += (float) (8 * tpf); // Speed up slightly faster
-        }
+        // --- FIX STARTS HERE ---
+        // Cap the tpf to roughly 60 FPS (0.017 seconds).
+        // This prevents the "speed burst" after resuming from a dialog box.
+        double fixedTpf = Math.min(tpf, 0.017);
+        // --- FIX ENDS HERE ---
 
-        velocity.y += (GRAVITY_FORCE * gravityDirection * tpf);
+        // Use fixedTpf for speed increase
+        velocity.x += (float) (8 * fixedTpf);
+
+        // Use fixedTpf for gravity calculations
+        velocity.y += (GRAVITY_FORCE * gravityDirection * fixedTpf);
 
         if (Math.abs(velocity.y) > JUMP_FORCE) {
             velocity.y = (float) (JUMP_FORCE * gravityDirection);
         }
 
-        entity.translate(velocity.x * tpf, velocity.y * tpf);
+        // Use fixedTpf for actual movement
+        entity.translate(velocity.x * fixedTpf, velocity.y * fixedTpf);
+
         onSurface = false;
     }
 
@@ -50,10 +47,7 @@ public class PlayerComponent extends Component {
         if (onSurface) {
             gravityDirection *= -1;
             onSurface = false;
-
-            // Apply the gentle jump force
             velocity.y = (float) (JUMP_FORCE * gravityDirection);
-
             entity.setScaleY(gravityDirection);
         }
     }

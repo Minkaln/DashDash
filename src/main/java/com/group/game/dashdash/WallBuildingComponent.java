@@ -17,23 +17,12 @@ public class WallBuildingComponent extends Component {
 
     @Override
     public void onUpdate(double tpf) {
-        GameMode mode = geto("mode");
-        int level = geti("level");
-
-        if (mode == GameMode.Classic) {
-            int winScore = level * 2000;
-            if (geti("score") >= winScore) {
-                return;
-            }
-        }
-
         if (lastWall - entity.getX() < getAppWidth()) {
             buildWalls();
         }
     }
 
     private Polygon wallView(double width, double height) {
-        // Pointing UP
         Polygon wall = new Polygon(
                 0.0, height,
                 width / 2.0, 0.0,
@@ -44,7 +33,6 @@ public class WallBuildingComponent extends Component {
     }
 
     private Polygon spikeViewDown(double width, double height) {
-        // Pointing DOWN
         Polygon spike = new Polygon(
                 0.0, 0.0,
                 width, 0.0,
@@ -59,41 +47,42 @@ public class WallBuildingComponent extends Component {
         PlayerComponent pc = player.getComponent(PlayerComponent.class);
         double currentSpeed = pc.getVelocityX();
 
-        // 1. Spacing between spike sets
-        double gapBetweenObstacles = currentSpeed * 1.5;
+        // 1. DYNAMIC GAP: The faster you go, the smaller the gap.
+        // Starts at 450, but subtracts based on speed. Min-capped at 180 for fairness.
+        double playerPassage = Math.max(180, 450 - (currentSpeed * 0.15));
 
-        // 2. WIDER HOLE: Increased base passage to 400px.
-        // This ensures that even with high gravity, the "safe zone" is huge.
-        double playerPassage = 400 + (currentSpeed * 0.05);
+        // 2. DYNAMIC SPACING: Distance between obstacles
+        double gapBetweenObstacles = currentSpeed * 1.3;
 
         double screenHeight = getAppHeight();
-        double wallWidth = 60; // Thinner walls are easier to pass
+        double wallWidth = 60;
         double playableHeight = screenHeight - (FLOOR_THICKNESS * 2);
 
         for (int i = 1; i <= 5; i++) {
-            double spawnX = lastWall + i * gapBetweenObstacles;
+            // 3. HORIZONTAL OFFSET: Spikes spawn slightly forward or backward
+            // to break the "grid" feel.
+            double horizontalOffset = random(-150, 150);
+            double spawnX = lastWall + (i * gapBetweenObstacles) + horizontalOffset;
+
             double chance = Math.random();
 
-            if (chance < 0.30) {
-                // DOUBLE SPIKES
+            if (chance < 0.35) {
+                // DOUBLE SPIKES (The Tunnel)
                 double totalWallSpace = playableHeight - playerPassage;
-
-                // CENTERED HOLE: We limit the randomness so the hole
-                // isn't tucked too far into a corner.
-                double topHeight = random(totalWallSpace * 0.2, totalWallSpace * 0.8);
+                double topHeight = random(totalWallSpace * 0.15, totalWallSpace * 0.85);
                 double bottomHeight = totalWallSpace - topHeight;
 
                 spawnSpike(spawnX, FLOOR_THICKNESS, wallWidth, topHeight, true);
                 spawnSpike(spawnX, screenHeight - FLOOR_THICKNESS - bottomHeight, wallWidth, bottomHeight, false);
 
             } else if (chance < 0.65) {
-                // FLOOR ONLY - Lowered height
-                double h = random(80, 250);
+                // FLOOR ONLY
+                double h = random(100, 300);
                 spawnSpike(spawnX, screenHeight - FLOOR_THICKNESS - h, wallWidth, h, false);
 
             } else if (chance < 0.95) {
-                // CEILING ONLY - Lowered height
-                double h = random(80, 250);
+                // CEILING ONLY
+                double h = random(100, 300);
                 spawnSpike(spawnX, FLOOR_THICKNESS, wallWidth, h, true);
             }
         }
@@ -117,7 +106,6 @@ public class WallBuildingComponent extends Component {
                 .at(x, y)
                 .type(EntityType.WALL)
                 .view(pointingDown ? spikeViewDown(w, h) : wallView(w, h))
-                // Triangle Hitbox
                 .bbox(new HitBox(BoundingShape.polygon(p1, p2, p3)))
                 .with(new CollidableComponent(true))
                 .buildAndAttach();

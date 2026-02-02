@@ -18,8 +18,6 @@ import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Font;
 import javafx.scene.text.Text;
 import javafx.util.Duration;
-import javafx.scene.media.Media;
-import javafx.scene.media.MediaPlayer;
 
 import java.util.Map;
 
@@ -29,19 +27,21 @@ import static com.group.game.dashdash.EntityType.PLAYER;
 public class GGApplication extends GameApplication {
 
     private PlayerComponent playerComponent;
-    private boolean requestNewGame = false;
     private AudioManager audioManager;
 
-    // --- SAVE SYSTEM VARIABLES ---
     private SaveData saveData;
     private static final String SAVE_FILE = "save_data.dat";
+
+    public AudioManager getAudioManager() {
+        return audioManager;
+    }
 
     @Override
     protected void initSettings(GameSettings settings) {
         settings.setWidth(1280);
         settings.setHeight(720);
         settings.setTitle("DashDash");
-        settings.setVersion("0.0.10");
+        settings.setVersion("0.1.1");
         settings.setTicksPerSecond(60);
         settings.setMainMenuEnabled(true);
         settings.setSceneFactory(new MenuFactory());
@@ -49,18 +49,17 @@ public class GGApplication extends GameApplication {
 
     @Override
     protected void onPreInit() {
+        double savedVolume = getSettings().getGlobalMusicVolume();
+        UserPrefs.setMasterVolume(savedVolume);
+
         audioManager = new AudioManager();
         audioManager.startPlaylist();
 
         if (getFileSystemService().exists(SAVE_FILE)) {
-            // Load existing progress
             saveData = (SaveData) getFileSystemService().readDataTask(SAVE_FILE).run();
-            System.out.println("Save data loaded successfully.");
         } else {
-            // Create new progress for a new player
             saveData = new SaveData();
-            saveGame(); // Create the physical file immediately
-            System.out.println("No save file found. Created a new one.");
+            saveGame();
         }
     }
 
@@ -71,7 +70,7 @@ public class GGApplication extends GameApplication {
             protected void onActionBegin() {
                 if (playerComponent != null) {
                     playerComponent.flipGravity();
-                    audioManager.playJumpSound();
+                    AudioManager.playJumpSound();
                 }
             }
         }, KeyCode.SPACE);
@@ -80,48 +79,26 @@ public class GGApplication extends GameApplication {
     @Override
     protected void initGameVars(Map<String, Object> vars) {
         vars.put("mode", GameMode.Endless);
-        vars.put("level", 1);
         vars.put("stageColor", Color.BLACK);
-        vars.put("score", 0);
-        // 2. Add highscore to game variables so UI can bind to it
-        vars.put("highscore", saveData.highscore);
+        vars.put("score", 0.0); // Changed to 0.0 because TPF results in doubles
+        vars.put("highscore", (double) saveData.highscore);
     }
 
     @Override
     protected void initGame() {
-        initBackground();   // 🖼 PNG background
-
-        entityBuilder()
-                .with(new Floor())
-                .buildAndAttach();
-
+        initBackground();
+        entityBuilder().with(new Floor()).buildAndAttach();
         initPlayer();
     }
 
-
-    // 🖼 PNG BACKGROUND (FIXED)
     private void initBackground() {
         var url = getClass().getResource("/assets/textures/background.png");
-
-        if (url == null) {
-            System.out.println("❌ Background image not found");
-            return;
-        }
-
+        if (url == null) return;
         Image bgImage = new Image(url.toExternalForm());
-        // 🖼 Keep background alive
         ImageView backgroundView = new ImageView(bgImage);
-
         backgroundView.setFitWidth(getAppWidth());
         backgroundView.setFitHeight(getAppHeight());
-        backgroundView.setPreserveRatio(false);
-
-        Entity bg = entityBuilder()
-                .view(backgroundView)
-                .zIndex(-100) // stay behind everything
-                .buildAndAttach();
-
-        // Follow camera
+        Entity bg = entityBuilder().view(backgroundView).zIndex(-100).buildAndAttach();
         bg.xProperty().bind(getGameScene().getViewport().xProperty());
         bg.yProperty().bind(getGameScene().getViewport().yProperty());
     }
@@ -137,8 +114,7 @@ public class GGApplication extends GameApplication {
                 } else {
                     player.setY(floor.getBottomY());
                 }
-
-                playerComponent.setOnSurface(true);
+                if (playerComponent != null) playerComponent.setOnSurface(true);
             }
         });
 
@@ -146,28 +122,28 @@ public class GGApplication extends GameApplication {
         getPhysicsWorld().addCollisionHandler(new CollisionHandler(PLAYER, EntityType.WALL) {
             @Override
             protected void onCollisionBegin(Entity player, Entity wall) {
-                requestNewGame();
+                onPlayerDied();
             }
         });
     }
 
     @Override
     protected void initUI() {
-        // Current Score
         Text uiScore = new Text("");
         uiScore.setFont(Font.font(72));
         uiScore.setTranslateX(getAppWidth() - 200);
-        uiScore.setTranslateY(100); // Shifted up slightly
+        uiScore.setTranslateY(100);
         uiScore.fillProperty().bind(getop("stageColor"));
-        uiScore.textProperty().bind(getip("score").asString());
 
-        // 3. High Score Display
+        // Use asString("%.0f") to keep the UI showing whole numbers
+        uiScore.textProperty().bind(getdp("score").asString("%.0f"));
+
         Text uiHighscore = new Text("");
         uiHighscore.setFont(Font.font(24));
         uiHighscore.setTranslateX(getAppWidth() - 200);
         uiHighscore.setTranslateY(140);
         uiHighscore.setFill(Color.GRAY);
-        uiHighscore.textProperty().bind(getip("highscore").asString().concat(" (Best)"));
+        uiHighscore.textProperty().bind(getdp("highscore").asString("%.0f").concat(" (Best)"));
 
         addUINode(uiScore);
         addUINode(uiHighscore);
@@ -175,91 +151,68 @@ public class GGApplication extends GameApplication {
 
     @Override
     protected void onUpdate(double tpf) {
-        if (requestNewGame) {
-            requestNewGame = false;
-            getGameController().startNewGame();
-            return;
+        if (!getWorldProperties().exists("score")) return;
+
+        // FIXED: Smoother score calculation using Delta Time (tpf)
+        double pointsPerSecond = 60;
+        inc("score", pointsPerSecond * tpf);
+
+        if (audioManager != null) {
+            audioManager.onUpdate(tpf);
         }
-
-        inc("score", +1);
-        audioManager.onUpdate(tpf);
-
-        GameMode mode = geto("mode");
-        int level = geti("level");
-        if (mode == GameMode.Classic) {
-            int winCondition = level * 2000;
-            if (geti("score") >= winCondition) {
-                showWinMessage();
-            }
-        }
-    }
-
-    private void showWinMessage() {
-        // 4. Update unlocked levels progress
-        int currentLevel = geti("level");
-        if (currentLevel >= saveData.unlockedLevel) {
-            saveData.unlockedLevel = currentLevel + 1;
-            saveGame();
-        }
-
-        showMessage("Level " + geti("level") + " Complete!", () -> {
-            getGameController().gotoMainMenu();
-            return null;
-        });
     }
 
     private void saveGame() {
         getFileSystemService().writeDataTask(saveData, SAVE_FILE);
     }
 
-    public void requestNewGame() {
-        audioManager.playCrashSound();
+    public void onPlayerDied() {
+        AudioManager.playCrashSound();
 
-        // 5. Check and save highscore before restarting
-        int finalScore = geti("score");
+        // --- FIX: Use getd() instead of geti() ---
+        int finalScore = (int) getd("score");
+
         if (finalScore > saveData.highscore) {
             saveData.highscore = finalScore;
-            set("highscore", finalScore); // Update visible UI
+            // Highscore is stored as double in initGameVars for UI binding
+            set("highscore", (double) finalScore);
             saveGame();
         }
 
-        requestNewGame = true;
-    }
+        getGameController().pauseEngine();
 
+        getDialogService().showConfirmationBox("Game Over! Score: " + finalScore + "\nTry Again?", answer -> {
+            getGameController().resumeEngine();
+
+            if (audioManager != null) {
+                audioManager.forceNextSong();
+            }
+
+            if (answer) {
+                runOnce(() -> {
+                    getGameController().startNewGame();
+                    return null;
+                }, Duration.seconds(0.1));
+            } else {
+                getGameController().gotoMainMenu();
+            }
+        });
+    }
 
     private void initPlayer() {
         playerComponent = new PlayerComponent();
-
-        // 🟦 Player body
-        Rectangle cube = new Rectangle(70, 60);
-        cube.setFill(Color.DODGERBLUE);
+        Rectangle cube = new Rectangle(70, 60, Color.DODGERBLUE);
         cube.setArcWidth(6);
         cube.setArcHeight(6);
-
-        // 👀 Eyes
         Rectangle leftEye = new Rectangle(8, 8, Color.BLACK);
         Rectangle rightEye = new Rectangle(8, 8, Color.BLACK);
-
-        leftEye.setTranslateX(18);
-        leftEye.setTranslateY(18);
-
-        rightEye.setTranslateX(44);
-        rightEye.setTranslateY(18);
-
-        // 👄 Mouth (._.)
+        leftEye.setTranslateX(18); leftEye.setTranslateY(18);
+        rightEye.setTranslateX(44); rightEye.setTranslateY(18);
         Text mouth = new Text("O");
         mouth.setFill(Color.BLACK);
         mouth.setStyle("-fx-font-size: 14px; -fx-font-weight: bold;");
-        mouth.setTranslateX(26);
-        mouth.setTranslateY(42);
-
-        // 🧩 Combine face + body
-        Group playerView = new Group(
-                cube,
-                leftEye,
-                rightEye,
-                mouth
-        );
+        mouth.setTranslateX(26); mouth.setTranslateY(42);
+        Group playerView = new Group(cube, leftEye, rightEye, mouth);
 
         Entity player = entityBuilder()
                 .at(0, 0)
@@ -267,15 +220,11 @@ public class GGApplication extends GameApplication {
                 .bbox(new HitBox(BoundingShape.box(70, 60)))
                 .view(playerView)
                 .collidable()
-                .with(playerComponent, new WallBuildingComponent(),new Floor())
+                .with(playerComponent, new WallBuildingComponent(), new Floor())
                 .buildAndAttach();
 
         getGameScene().getViewport().setBounds(0, 0, Integer.MAX_VALUE, getAppHeight());
-        getGameScene().getViewport().bindToEntity(
-                player,
-                getAppWidth() / 3.0,
-                getAppHeight() / 2.0
-        );
+        getGameScene().getViewport().bindToEntity(player, getAppWidth() / 3.0, getAppHeight() / 2.0);
 
         animationBuilder()
                 .duration(Duration.seconds(0.86))
@@ -288,6 +237,7 @@ public class GGApplication extends GameApplication {
 
     public static void main(String[] args) {
         System.setProperty("prism.allowhidpi", "false");
+        System.setProperty("javafx.animation.pulse", "10");
         launch(args);
     }
 }

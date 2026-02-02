@@ -12,51 +12,29 @@ public class MyMainMenu extends FXGLMenu {
     public MyMainMenu() {
         super(MenuType.MAIN_MENU);
 
+        // Background
         Rectangle bg = new Rectangle(FXGL.getAppWidth(), FXGL.getAppHeight(), Color.BLACK);
         getContentRoot().getChildren().add(bg);
 
+        // Title
         Text title = FXGL.getUIFactoryService().newText("DASH DASH", Color.WHITE, 60);
         title.setTranslateX(FXGL.getAppWidth() / 2.0 - 150);
         title.setTranslateY(150);
         getContentRoot().getChildren().add(title);
 
-        // --- ENDLESS MODE BUTTON ---
-        var btnEndless = FXGL.getUIFactoryService().newButton("ENDLESS MODE");
-        btnEndless.setTranslateX(FXGL.getAppWidth() / 2.0 - 100);
-        btnEndless.setTranslateY(300);
+        // --- START GAME BUTTON (Formerly Endless Mode) ---
+        var btnStart = FXGL.getUIFactoryService().newButton("START GAME");
+        btnStart.setTranslateX(FXGL.getAppWidth() / 2.0 - 100);
+        btnStart.setTranslateY(350); // Positioned more centrally since levels are gone
 
-        // Uses the AudioManager class directly
-        btnEndless.setOnMouseEntered(e -> AudioManager.playHoverSound());
+        btnStart.setOnMouseEntered(e -> AudioManager.playHoverSound());
 
-        btnEndless.setOnAction(e -> {
+        btnStart.setOnAction(e -> {
             FXGL.set("mode", GameMode.Endless);
             fireNewGame();
         });
 
-        Text classicText = FXGL.getUIFactoryService().newText("CLASSIC LEVELS", Color.GRAY, 30);
-        classicText.setTranslateX(FXGL.getAppWidth() / 2.0 - 100);
-        classicText.setTranslateY(400);
-
-        getContentRoot().getChildren().addAll(btnEndless, classicText);
-
-        // --- LEVEL BUTTONS ---
-        for (int i = 1; i <= 3; i++) {
-            int levelNum = i;
-            var btnLevel = FXGL.getUIFactoryService().newButton("Level " + levelNum);
-            btnLevel.setTranslateX(FXGL.getAppWidth() / 2.0 - 250 + (i * 120));
-            btnLevel.setTranslateY(450);
-
-            // Trigger the sound from the manager
-            btnLevel.setOnMouseEntered(e -> AudioManager.playHoverSound());
-
-            btnLevel.setOnAction(e -> {
-                FXGL.set("mode", GameMode.Classic);
-                FXGL.set("level", levelNum);
-                fireNewGame();
-            });
-
-            getContentRoot().getChildren().add(btnLevel);
-        }
+        getContentRoot().getChildren().add(btnStart);
 
         // --- DEBUG BUTTON ---
         var btnDebug = FXGL.getUIFactoryService().newButton("DEBUG: PLAY TTEN");
@@ -66,7 +44,6 @@ public class MyMainMenu extends FXGLMenu {
         btnDebug.setOnMouseEntered(e -> AudioManager.playHoverSound());
 
         btnDebug.setOnAction(e -> {
-            // Simplified debug action
             try {
                 var music = FXGL.getAssetLoader().loadMusic("TTEN.wav");
                 FXGL.getAudioPlayer().playMusic(music);
