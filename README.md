@@ -25,7 +25,6 @@ Lead Developer - @Minkaln
 Developer - @SakadareachMao
 [@Sakadareach](https://www.facebook.com/sakadareach.mao)
 
-RickyRubixCube
 Developer - @RickyRubixCube
 [@RickyRubixCube]()
 
