@@ -19,7 +19,7 @@ import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Font;
 import javafx.scene.text.Text;
 import javafx.util.Duration;
-
+import java.io.File;
 import java.util.Map;
 
 import static com.almasb.fxgl.dsl.FXGLForKtKt.*;
@@ -34,9 +34,8 @@ public class GGApplication extends GameApplication {
     private PlayerComponent playerComponent;
     private AudioManager audioManager;
 
-    private SaveData saveData;
-    private static final String SAVE_FILE = "save_data.dat";
-
+    private SaveData saveData = new SaveData();
+    private static final String SAVE_FILE = System.getProperty("user.home") + File.separator + "dashdash_save.properties";
     public AudioManager getAudioManager() {
         return audioManager;
     }
@@ -46,7 +45,7 @@ public class GGApplication extends GameApplication {
         settings.setWidth(1280);
         settings.setHeight(720);
         settings.setTitle("DashDash");
-        settings.setVersion("0.9.8");
+        settings.setVersion("1.0.0");
         settings.setTicksPerSecond(60);
         settings.setMainMenuEnabled(true);
         settings.setSceneFactory(new MenuFactory());
@@ -54,20 +53,33 @@ public class GGApplication extends GameApplication {
 
     @Override
     protected void onPreInit() {
-        double savedVolume = getSettings().getGlobalMusicVolume();
-        UserPrefs.setMasterVolume(savedVolume);
+        java.io.File file = new java.io.File(SAVE_FILE);
 
+        if (file.exists()) {
+            try (java.io.FileInputStream in = new java.io.FileInputStream(file)) {
+                java.util.Properties props = new java.util.Properties();
+                props.load(in);
+
+                // Restore Highscore
+                saveData.highscore = Integer.parseInt(props.getProperty("highscore", "0"));
+
+                // Restore Volume to your UserPrefs class
+                double savedVol = Double.parseDouble(props.getProperty("volume", "0.5"));
+                UserPrefs.setMasterVolume(savedVol);
+
+                // Sync the game engine to this volume
+                getSettings().setGlobalMusicVolume(savedVol);
+                getSettings().setGlobalSoundVolume(savedVol);
+
+            } catch (Exception e) {
+                System.err.println("Could not load save: " + e.getMessage());
+            }
+        }
+
+        // Now start the music using the restored volume
         audioManager = new AudioManager();
         audioManager.startPlaylist();
-
-        if (getFileSystemService().exists(SAVE_FILE)) {
-            saveData = (SaveData) getFileSystemService().readDataTask(SAVE_FILE).run();
-        } else {
-            saveData = new SaveData();
-            saveGame();
-        }
     }
-
     @Override
     protected void initInput() {
         getInput().addAction(new UserAction("Jump") {
@@ -83,12 +95,12 @@ public class GGApplication extends GameApplication {
 
     @Override
     protected void initGameVars(Map<String, Object> vars) {
-        vars.put("mode", GameMode.Endless);
-        vars.put("stageColor", Color.BLACK);
-        vars.put("score", 0.0);
+        // This grabs the value that was just loaded in onPreInit
         vars.put("highscore", (double) saveData.highscore);
 
-
+        vars.put("score", 0.0);
+        vars.put("mode", GameMode.Endless);
+        vars.put("stageColor", Color.BLACK);
         vars.put("currentBgName", "gd_bg3.jpg");
     }
 
@@ -218,18 +230,39 @@ public class GGApplication extends GameApplication {
 
        }
     }
-    private void saveGame() {
-        getFileSystemService().writeDataTask(saveData, SAVE_FILE);
+    public void saveGame() {
+        try {
+            java.util.Properties props = new java.util.Properties();
+            java.io.File file = new java.io.File(SAVE_FILE);
+
+            // 1. Pack the data
+            props.setProperty("highscore", String.valueOf(saveData.highscore));
+            props.setProperty("volume", String.valueOf(UserPrefs.getMasterVolume()));
+            props.setProperty("unlockedLevel", String.valueOf(saveData.unlockedLevel));
+
+            // 2. Write to the file
+            try (java.io.FileOutputStream out = new java.io.FileOutputStream(file)) {
+                props.store(out, "DashDash Save Data");
+                out.flush();
+            }
+        } catch (Exception e) {
+            System.err.println("Failed to save settings: " + e.getMessage());
+        }
     }
 
     public void onPlayerDied() {
         AudioManager.playCrashSound();
 
         int finalScore = (int) getd("score");
+
+        // Check if score is actually higher
         if (finalScore > saveData.highscore) {
+            System.out.println("New Highscore! Old: " + saveData.highscore + " New: " + finalScore);
             saveData.highscore = finalScore;
             set("highscore", (double) finalScore);
-            saveGame();
+            saveGame(); // Ensure this is definitely being called
+        } else {
+            System.out.println("Score too low to save. Score: " + finalScore + " Best: " + saveData.highscore);
         }
 
         getGameController().pauseEngine();

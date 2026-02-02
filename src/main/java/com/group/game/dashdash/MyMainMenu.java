@@ -10,7 +10,8 @@ import javafx.scene.media.MediaView;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Text;
-
+import javafx.scene.layout.VBox;
+import javafx.scene.control.Slider;
 import java.util.Objects;
 
 public class MyMainMenu extends FXGLMenu {
@@ -18,108 +19,93 @@ public class MyMainMenu extends FXGLMenu {
     public MyMainMenu() {
         super(MenuType.MAIN_MENU);
 
-        /* ================= VIDEO BACKGROUND ================= */
-
-        var url = Objects.requireNonNull(
-                MyMainMenu.class.getResource("/assets/videos/menu_bg.mp4")
-        ).toExternalForm();
-
-        var media = new Media(url);
-        var player = new MediaPlayer(media);
+        /* ================= VIDEO BACKGROUND & OVERLAY ================= */
+        var url = Objects.requireNonNull(MyMainMenu.class.getResource("/assets/videos/menu_bg.mp4")).toExternalForm();
+        var player = new MediaPlayer(new Media(url));
         player.setCycleCount(MediaPlayer.INDEFINITE);
         player.setMute(true);
         player.setOnReady(player::play);
-
         var videoView = new MediaView(player);
         videoView.setFitWidth(FXGL.getAppWidth());
         videoView.setFitHeight(FXGL.getAppHeight());
         videoView.setPreserveRatio(false);
 
-        getContentRoot().getChildren().add(videoView);
-
-        /* ================= DARK OVERLAY (for contrast) ================= */
-
-        var overlay = new Rectangle(
-                FXGL.getAppWidth(),
-                FXGL.getAppHeight(),
-                Color.rgb(0, 0, 0, 0.35)
-        );
+        var overlay = new Rectangle(FXGL.getAppWidth(), FXGL.getAppHeight(), Color.rgb(0, 0, 0, 0.35));
         overlay.setMouseTransparent(true);
-        getContentRoot().getChildren().add(overlay);
+
+        getContentRoot().getChildren().addAll(videoView, overlay);
 
         /* ================= TITLE ================= */
-
-        Text title = FXGL.getUIFactoryService()
-                .newText("DASH DASH", Color.WHITE, 60);
-
+        Text title = FXGL.getUIFactoryService().newText("DASH DASH", Color.WHITE, 60);
         title.setTranslateX(FXGL.getAppWidth() / 2.1 - 150);
         title.setTranslateY(150);
-
         title.setStroke(Color.BLACK);
         title.setStrokeWidth(3);
         title.setEffect(new DropShadow(15, Color.BLACK));
-
         getContentRoot().getChildren().add(title);
 
-        /* ================= START TEXT BUTTON ================= */
+        /* ================= START BUTTON ================= */
         var btnEndless = FXGL.getUIFactoryService().newButton("START");
         btnEndless.setTranslateX(FXGL.getAppWidth() / 1.63 - 250);
-        btnEndless.setTranslateY(300);
-        btnEndless.setStyle(
-                "-fx-background-color: transparent;" +
-                        "-fx-text-fill: white;" +
-                        "-fx-font-size: 18px;" +
-                        "-fx-font-weight: bold"
-        );
-        btnEndless.setEffect(new DropShadow(5, Color.BLACK));
-
-        // Changed _ to e to fix Java 21 compatibility
-        btnEndless.setOnMouseEntered(e -> AudioManager.playHoverSound());
+        btnEndless.setTranslateY(280);
+        btnEndless.setStyle("-fx-background-color: transparent; -fx-text-fill: white; -fx-font-size: 18px; -fx-font-weight: bold");
         btnEndless.setOnAction(e -> {
             FXGL.set("mode", GameMode.Endless);
             fireNewGame();
         });
 
+        /* ================= SETTINGS BUTTON ================= */
+        var btnSettings = FXGL.getUIFactoryService().newButton("SETTINGS");
+        btnSettings.setTranslateX(FXGL.getAppWidth() / 1.63 - 250);
+        btnSettings.setTranslateY(350);
+        btnSettings.setStyle("-fx-background-color: transparent; -fx-text-fill: white; -fx-font-size: 18px; -fx-font-weight: bold");
 
-        /* ================= EXIT TEXT BUTTON ================= */
+        /* ================= EXIT BUTTON ================= */
         var btnExit = FXGL.getUIFactoryService().newButton("EXIT");
         btnExit.setTranslateX(FXGL.getAppWidth() / 1.63 - 250);
-        btnExit.setTranslateY(380);
-        btnExit.setStyle(
-                "-fx-background-color: transparent;" +
-                        "-fx-text-fill: white;" +
-                        "-fx-font-size: 18px;" +
-                        "-fx-font-weight: bold"
-        );
-        btnExit.setEffect(new DropShadow(5, Color.BLACK));
-
-        // Changed _ to e to fix Java 21 compatibility
-        btnExit.setOnMouseEntered(e -> AudioManager.playHoverSound());
+        btnExit.setTranslateY(420); // Moved down to avoid overlap
+        btnExit.setStyle("-fx-background-color: transparent; -fx-text-fill: white; -fx-font-size: 18px; -fx-font-weight: bold");
         btnExit.setOnAction(e -> FXGL.getGameController().exit());
 
+        /* ================= SETTINGS PANEL (Hidden by default) ================= */
+        var settingsBox = new VBox(15);
+        settingsBox.setTranslateX(FXGL.getAppWidth() / 1.63 - 250);
+        settingsBox.setTranslateY(300);
+        settingsBox.setVisible(false);
 
-        /* ================= DEBUG BUTTON ================= */
-        var btnDebug = FXGL.getUIFactoryService().newButton("DEBUG: PLAY TTEN");
-        btnDebug.setTranslateX(20);
-        btnDebug.setTranslateY(FXGL.getAppHeight() - 60);
-        btnDebug.setStyle(
-                "-fx-background-color: rgba(0,0,0,0.4);" +
-                        "-fx-text-fill: white;"
-        );
-        btnDebug.setEffect(new DropShadow(6, Color.BLACK));
+        Text volLabel = FXGL.getUIFactoryService().newText("VOLUME", Color.WHITE, 20);
+        Slider slider = new Slider(0, 1, UserPrefs.getMasterVolume());
+        slider.setPrefWidth(200);
 
-        // Changed _ to e to fix Java 21 compatibility
-        btnDebug.setOnMouseEntered(e -> AudioManager.playHoverSound());
-        btnDebug.setOnAction(e -> {
-            try {
-                var music = FXGL.getAssetLoader().loadMusic("TTEN.wav");
-                FXGL.getAudioPlayer().playMusic(music);
-            } catch (Exception err) {
-                System.out.println("Debug Playback Failed: " + err.getMessage());
-            }
+        slider.valueProperty().addListener((obs, oldVal, newVal) -> {
+            double vol = newVal.doubleValue();
+            UserPrefs.setMasterVolume(vol);
+            FXGL.getSettings().setGlobalMusicVolume(vol);
+            FXGL.getSettings().setGlobalSoundVolume(vol);
+            ((GGApplication) FXGL.getApp()).saveGame();
         });
 
-        // Added all buttons at once for cleaner code
-        getContentRoot().getChildren().addAll(btnEndless, btnExit, btnDebug);
+        var btnBack = FXGL.getUIFactoryService().newButton("BACK");
+        btnBack.setStyle("-fx-background-color: transparent; -fx-text-fill: white; -fx-font-weight: bold");
+
+        settingsBox.getChildren().addAll(volLabel, slider, btnBack);
+
+        /* ================= LOGIC TO SWITCH VIEWS ================= */
+        btnSettings.setOnAction(e -> {
+            btnEndless.setVisible(false);
+            btnSettings.setVisible(false);
+            btnExit.setVisible(false);
+            settingsBox.setVisible(true);
+        });
+
+        btnBack.setOnAction(e -> {
+            settingsBox.setVisible(false);
+            btnEndless.setVisible(true);
+            btnSettings.setVisible(true);
+            btnExit.setVisible(true);
+        });
+
+        // Add everything to the screen
+        getContentRoot().getChildren().addAll(btnEndless, btnSettings, btnExit, settingsBox);
     }
 }
