@@ -14,13 +14,6 @@ DashDash is a side-scrolling "infinite runner" where the player controls a cube 
 * Maven or Gradle (To handle FXGL dependencies).
 * Operating System: Windows 10/11, macOS, or Linux.
 
-### Executing program
-
-* How to run the program
-* Step-by-step bullets
-```
-code blocks for commands
-```
 
 ## Authors
 
