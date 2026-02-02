@@ -10,8 +10,8 @@ DashDash is a side-scrolling "infinite runner" where the player controls a cube 
 
 ### Dependencies
 
-* Java JDK 17 or higher (Required for JavaFX 17+ compatibility).
-* Maven or Gradle (To handle FXGL dependencies).
+* Java JDK 25
+* Maven (To handle FXGL dependencies).
 * Operating System: Windows 10/11, macOS, or Linux.
 
 
