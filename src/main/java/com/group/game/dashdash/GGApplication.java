@@ -132,8 +132,9 @@ public class GGApplication extends GameApplication {
         Text uiScore = new Text("");
         uiScore.setFont(Font.font(72));
         uiScore.setTranslateX(getAppWidth() - 200);
-        uiScore.setTranslateY(100);
-        uiScore.fillProperty().bind(getop("stageColor"));
+        uiScore.setTranslateY(100); // Shifted up slightly
+        uiScore.setFill(Color.WHITE);
+        uiScore.textProperty().bind(getip("score").asString());
 
         // Use asString("%.0f") to keep the UI showing whole numbers
         uiScore.textProperty().bind(getdp("score").asString("%.0f"));
@@ -142,8 +143,8 @@ public class GGApplication extends GameApplication {
         uiHighscore.setFont(Font.font(24));
         uiHighscore.setTranslateX(getAppWidth() - 200);
         uiHighscore.setTranslateY(140);
-        uiHighscore.setFill(Color.GRAY);
-        uiHighscore.textProperty().bind(getdp("highscore").asString("%.0f").concat(" (Best)"));
+        uiHighscore.setFill(Color.WHITE);
+        uiHighscore.textProperty().bind(getip("highscore").asString().concat(" (Best)"));
 
         addUINode(uiScore);
         addUINode(uiHighscore);
