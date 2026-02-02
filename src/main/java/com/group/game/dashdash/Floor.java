@@ -22,8 +22,8 @@ public class Floor extends Component {
 
     private Rectangle floorView(double width, double height) {
         Rectangle rect = new Rectangle(width, height);
-        rect.setArcWidth(10);
-        rect.setArcHeight(10);
+        rect.setArcWidth(1);
+        rect.setArcHeight(1);
         rect.fillProperty().bind(FXGL.getWorldProperties().objectProperty("stageColor"));
         return rect;
     }

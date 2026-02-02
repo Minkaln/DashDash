@@ -108,6 +108,7 @@ public class GGApplication extends GameApplication {
         getPhysicsWorld().addCollisionHandler(new CollisionHandler(PLAYER, EntityType.FLOOR) {
             @Override
             protected void onCollision(Entity player, Entity floor) {
+                // Snap logic
                 if (player.getY() > getAppHeight() / 2.0) {
                     player.setY(floor.getY() - player.getHeight());
                 } else {
@@ -117,6 +118,7 @@ public class GGApplication extends GameApplication {
             }
         });
 
+        // Deadly walls
         getPhysicsWorld().addCollisionHandler(new CollisionHandler(PLAYER, EntityType.WALL) {
             @Override
             protected void onCollisionBegin(Entity player, Entity wall) {
