@@ -72,8 +72,10 @@ public class MyMainMenu extends FXGLMenu {
                         "-fx-font-weight: bold"
         );
         btnEndless.setEffect(new DropShadow(5, Color.BLACK));
-        btnEndless.setOnMouseEntered(_ -> AudioManager.playHoverSound());
-        btnEndless.setOnAction(_ -> {
+
+        // Changed _ to e to fix Java 21 compatibility
+        btnEndless.setOnMouseEntered(e -> AudioManager.playHoverSound());
+        btnEndless.setOnAction(e -> {
             FXGL.set("mode", GameMode.Endless);
             fireNewGame();
         });
@@ -82,7 +84,7 @@ public class MyMainMenu extends FXGLMenu {
         /* ================= EXIT TEXT BUTTON ================= */
         var btnExit = FXGL.getUIFactoryService().newButton("EXIT");
         btnExit.setTranslateX(FXGL.getAppWidth() / 1.63 - 250);
-        btnExit.setTranslateY(380); // below SETTINGS
+        btnExit.setTranslateY(380);
         btnExit.setStyle(
                 "-fx-background-color: transparent;" +
                         "-fx-text-fill: white;" +
@@ -90,30 +92,25 @@ public class MyMainMenu extends FXGLMenu {
                         "-fx-font-weight: bold"
         );
         btnExit.setEffect(new DropShadow(5, Color.BLACK));
-        btnExit.setOnMouseEntered(_ -> AudioManager.playHoverSound());
-        btnExit.setOnAction(_ -> FXGL.getGameController().exit()); // Proper exit
 
+        // Changed _ to e to fix Java 21 compatibility
+        btnExit.setOnMouseEntered(e -> AudioManager.playHoverSound());
+        btnExit.setOnAction(e -> FXGL.getGameController().exit());
 
-// Add all buttons to the UI
-        getContentRoot().getChildren().addAll(btnEndless, btnExit);
 
         /* ================= DEBUG BUTTON ================= */
-
-        var btnDebug = FXGL.getUIFactoryService()
-                .newButton("DEBUG: PLAY TTEN");
-
+        var btnDebug = FXGL.getUIFactoryService().newButton("DEBUG: PLAY TTEN");
         btnDebug.setTranslateX(20);
         btnDebug.setTranslateY(FXGL.getAppHeight() - 60);
-
         btnDebug.setStyle(
                 "-fx-background-color: rgba(0,0,0,0.4);" +
                         "-fx-text-fill: white;"
         );
-
         btnDebug.setEffect(new DropShadow(6, Color.BLACK));
-        btnDebug.setOnMouseEntered(_ -> AudioManager.playHoverSound());
 
-        btnDebug.setOnAction(_ -> {
+        // Changed _ to e to fix Java 21 compatibility
+        btnDebug.setOnMouseEntered(e -> AudioManager.playHoverSound());
+        btnDebug.setOnAction(e -> {
             try {
                 var music = FXGL.getAssetLoader().loadMusic("TTEN.wav");
                 FXGL.getAudioPlayer().playMusic(music);
@@ -122,6 +119,7 @@ public class MyMainMenu extends FXGLMenu {
             }
         });
 
-        getContentRoot().getChildren().add(btnDebug);
+        // Added all buttons at once for cleaner code
+        getContentRoot().getChildren().addAll(btnEndless, btnExit, btnDebug);
     }
 }
