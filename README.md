@@ -11,6 +11,10 @@ DashDash is a side-scrolling "infinite runner" where the player controls a cube 
 
 ## Getting Started
 
+### Download Link
+
+* https://github.com/Minkaln/DashDash/releases/tag/v1.0.0
+
 ### Dependencies
 
 * Java JDK 25 (require)
